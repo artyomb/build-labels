@@ -34,7 +34,7 @@ To install the gem
 
 ## Usage
 Create the file `simple-compose.yml` which describes the images to build
-```ruby
+```yaml
 version: '3.8'
 
 services:
@@ -48,7 +48,7 @@ services:
 ```
 Then run in the current directory
 
-    $ build-labels simple-compose.yml
+    $ build-labels -c simple-compose.yml gitlab
 
 This will ...
 

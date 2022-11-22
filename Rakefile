@@ -27,6 +27,9 @@ task :readme do |t|
   File.write './README.md', renderer.result
 end
 
+desc 'Pre commit'
+task commit: %i[spec readme]
+
 desc 'Build&push new version'
 task push: %i[spec readme] do |t|
   puts 'Build&push new version'

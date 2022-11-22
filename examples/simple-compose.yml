@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  service-a:
+    image: service-a
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+

@@ -1,0 +1,34 @@
+# build-labels
+
+This gem allows ...  
+
+```
+build-labels simple-compose.yml | docker-compose build -f -
+
+$ build-labels
+<%= %x{./bin/build-labels -h} %>
+```
+
+https://rdoc.info/gems/build-labels
+https://rubydoc.info/gems/build-labels
+https://gemdocs.org/gems/build-labels
+
+## Installation
+To install the gem
+
+    $ gem install build-labels
+
+## Usage
+Create the file `simple-compose.yml` which describes the images to build
+```ruby
+<%= %x{cat ./examples/simple-compose.yml} %>
+```
+Then run in the current directory
+
+    $ build-labels simple-compose.yml
+
+This will ...
+
+```yaml
+<%= %x{./bin/build-labels -e ./examples/.build-info -c ./examples/simple-compose.yml gitlab } %>
+```

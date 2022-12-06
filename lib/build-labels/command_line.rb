@@ -47,21 +47,23 @@ module BuildLabels
           o.on('-e', '--env FILE', 'Load .build_info FILE') { load_env _1 }
           o.on('-n', '--no-env', 'Do not process env variables') { true }
           o.on('-h', '--help') { puts o; exit }
-          o.parse! args, into: params
+          rest = o.parse! args, into: params
 
-          raise 'Compose file not defined' if $stdin.tty? && !params[:compose]
-
-          command = args.shift || ''
-          raise "Unknown command: #{command}" unless COMMANDS.key?(command.to_sym)
 
           compose_text = File.read(params[:compose]) if params[:compose]
           compose_text ||= STDIN.read unless $stdin.tty?
 
           builder = Builder.new
-          COMMANDS[command.to_sym].run builder, params
-          #  eval $(grep -v -e '^#' .build_info | xargs -I {} echo export \'{}\') && echo $CI_COMMIT_AUTHOR
 
-          builder.extend_compose compose_text
+          #  eval $(grep -v -e '^#' .build_info | xargs -I {} echo export \'{}\') && echo $CI_COMMIT_AUTHOR
+          if rest === ['gitlab'] && compose_text
+            rest = ['gitlab', 'to_compose']
+          end
+
+          rest.each do |command|
+            raise "Unknown command: #{command}" unless COMMANDS.key?(command.to_sym)
+            COMMANDS[command.to_sym].run builder, params, compose_text
+          end
         rescue => e
           puts e.message
           exit 1

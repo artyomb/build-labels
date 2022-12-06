@@ -5,10 +5,11 @@ include BuildLabels
 
 describe 'Test BuildLabels' do
   it 'build-labels' do
-    Dir[File.expand_path('data/*.drs', __dir__)].each do |stack_file|
-
+    #Dir[File.expand_path('data/*.drs', __dir__)].each do |stack_file|
+      response = `bin/build-labels -c ./examples/simple-compose.yml gitlab`
+      puts response
       expect(1).to eq(1)
-    end
+    #end
   end
 end
 

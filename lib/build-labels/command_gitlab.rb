@@ -1,7 +1,7 @@
 require_relative 'command_line'
 
 BuildLabels::CommandLine::COMMANDS[:gitlab] = Class.new do
-  def run(builder, params)
+  def run(builder, params, compose_text)
     builder.oc.vendor = '$CI_SERVER_URL/$GITLAB_USER_LOGIN'
     builder.oc.authors = '$CI_SERVER_URL/$GITLAB_USER_LOGIN'
     builder.oc.revision = '$CI_COMMIT_SHA'
@@ -23,6 +23,9 @@ BuildLabels::CommandLine::COMMANDS[:gitlab] = Class.new do
     builder.gitlab.cijoburl = '$CI_JOB_URL'
     builder.gitlab.mrurl = '$CI_PROJECT_URL/-/merge_requests/$CI_MERGE_REQUEST_ID'
     builder.gitlab.tag = '$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA'
+    builder.gitlab.commit_branch = '$CI_COMMIT_BRANCH'
+    builder.gitlab.commit_short_sha = '$CI_COMMIT_SHORT_SHA'
+    builder.gitlab.commit_timestamp = '$CI_COMMIT_TIMESTAMP'
 
     # org.opencontainers.image.title BUILDTITLE=$(echo $CI_PROJECT_TITLE | tr " " "_")
     # org.opencontainers.image.description

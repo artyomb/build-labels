@@ -43,14 +43,24 @@ module BuildLabels
       end
     end
 
-    def extend_compose(compose_text)
+    def each_labels
       generate_label_schema
       apply_environment
+      @namespaces.each do |ns, values|
+        yield ns, values
+      end
+    end
+
+    def extend_compose(compose_text)
       compose = YAML.load compose_text
       compose['services'].each do |name, service|
         next unless service['build']
+        if service['build'].class == String
+          service['build'] = { 'context' => service['build'] }
+        end
         service['build']['labels'] ||= []
-        @namespaces.each do |ns, values|
+
+        each_labels do |ns, values|
           values.each_pair do |k,v|
             service['build']['labels'] << "#{ns}.#{k}=#{v}" unless v.to_s.empty?
           end

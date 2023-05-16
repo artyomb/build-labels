@@ -9,8 +9,9 @@ BuildLabels::CommandLine::COMMANDS[:to_dockerfiles] = Class.new do
     compose['services'].each do |name, svc|
       next unless svc['build']
 
-      dockerfile = svc['build'].is_a?(String) ? svc['build'] : svc['build']['context']
-      dockerfile = File.join dockerfile, (svc['build']['dockerfile'] || 'Dockerfile')
+      # dockerfile = svc['build'].is_a?(String) ? svc['build'] : svc['build']['context']
+      # dockerfile = File.join dockerfile, (svc['build']['dockerfile'] || 'Dockerfile')
+      dockerfile = svc['build']['dockerfile'] || 'Dockerfile'
       dockerfile = File.expand_path dockerfile, compose_dir
       raise "file ot found: #{dockerfile}" unless File.exist? dockerfile
 

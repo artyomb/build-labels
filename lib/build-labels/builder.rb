@@ -59,6 +59,8 @@ module BuildLabels
           service['build'] = { 'context' => service['build'] }
         end
         service['build']['labels'] ||= []
+        add_namespace :dc, 'docker.service'
+        self.dc.name = name
 
         each_labels do |ns, values|
           values.each_pair do |k,v|

@@ -14,7 +14,7 @@ BuildLabels::CommandLine::COMMANDS[:to_dockerfiles] = Class.new do
       dockerfile = File.expand_path dockerfile, compose_dir
       raise "file ot found: #{dockerfile}" unless File.exist? dockerfile
 
-      dockerfile_lines = File.readlines(dockerfile).map(&:strip)
+      dockerfile_lines = File.readlines(dockerfile).map(&:rstrip)
 
       builder.each_labels do |ns, values|
         values.each_pair do |k, v|

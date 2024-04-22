@@ -10,7 +10,7 @@ BuildLabels::CommandLine::COMMANDS[:cache] = Class.new do
         service['build'] = { 'context' => service['build'] }
       end
       # registry = params[:registry]
-      image = service['image']
+      image = service['image'].gsub( /:.*/, '')
       service['build']['cache_from'] = [ "type=registry,ref=#{image}:cache" ]
       service['build']['cache_to'] = [ "type=registry,ref=#{image}:cache,mode=max" ]
       # #        - type=local,src=./.cache

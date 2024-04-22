@@ -38,7 +38,7 @@ module BuildLabels
     def apply_environment
       @namespaces.each do |ns, struct|
         struct.each_pair do |name, value|
-          value.sub! /^.*$/, `printf #{value}` if value.to_s =~ /\$/
+          value.sub!( /^.*$/, `printf #{value}`) if value.to_s =~ /\$/
         end
       end
     end

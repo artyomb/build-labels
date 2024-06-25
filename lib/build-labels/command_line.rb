@@ -46,6 +46,8 @@ module BuildLabels
           o.on('-c', '--compose COMPOSE_FILE', 'Compose file')
           o.on('-e', '--env FILE', 'Load .build_info FILE') { load_env _1 }
           o.on('-n', '--no-env', 'Do not process env variables') { true }
+          COMMANDS.values.select{_1.options(o) if _1.respond_to? :options }
+
           o.on('-h', '--help') { puts o; exit }
           rest = o.parse! args, into: params
 

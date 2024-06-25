@@ -6,7 +6,7 @@ This gem allows ...
 build-labels simple-compose.yml | docker-compose build -f -
 
 $ build-labels
-Version: 0.0.13
+Version: 0.0.14
 Usage:
 	build-labels -c docker-compose.yml gitlab
 	cat docker-compose.yml | build-labels gitlab
@@ -23,6 +23,10 @@ Options:
     -c, --compose COMPOSE_FILE       Compose file
     -e, --env FILE                   Load .build_info FILE
     -n, --no-env                     Do not process env variables
+        --cache-from CACHE FROM
+                                     type=[local,registry] ... 
+        --cache-to CACHE TO
+                                     type=[local,registry] ...
     -h, --help
 
 ```

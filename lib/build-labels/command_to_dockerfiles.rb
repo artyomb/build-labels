@@ -12,7 +12,7 @@ BuildLabels::CommandLine::COMMANDS[:to_dockerfiles] = Class.new do
       dockerfile = svc['build'].is_a?(String) ? svc['build'] : svc['build']['context']
       dockerfile = File.join dockerfile, (svc['build']['dockerfile'] || 'Dockerfile')
       dockerfile = File.expand_path dockerfile, compose_dir
-      raise "file ot found: #{dockerfile}" unless File.exist? dockerfile
+      raise "file not found: #{dockerfile}" unless File.exist? dockerfile
 
       dockerfile_lines = File.readlines(dockerfile).map(&:rstrip)
 

@@ -68,6 +68,9 @@ module BuildLabels
           end
         end
       end
+      compose['services'].delete_if do |name, svc|
+        ! svc.key?('build')
+      end
       puts compose.to_yaml
     end
   end

@@ -6,4 +6,9 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+  service-b:
+    image: service-a
+    build: .
+  service-c:
+    image: service-a
 

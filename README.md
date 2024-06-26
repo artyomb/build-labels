@@ -6,7 +6,7 @@ This gem allows ...
 build-labels simple-compose.yml | docker-compose build -f -
 
 $ build-labels
-Version: 0.0.14
+Version: 0.0.15
 Usage:
 	build-labels -c docker-compose.yml gitlab
 	cat docker-compose.yml | build-labels gitlab
@@ -51,6 +51,11 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+  service-b:
+    image: service-a
+    build: .
+  service-c:
+    image: service-a
 
 
 ```
@@ -88,6 +93,37 @@ services:
       - com.gitlab.ci.commit_short_sha=d17e5c66
       - com.gitlab.ci.commit_timestamp=2022-11-15T17:21:59+03:00
       - docker.service.name=service-a
+      - org.label-schema.url=https://gitlab.com//dev1/reports
+      - org.label-schema.vcs-url=https://gitlab.com//dev1/reports
+      - org.label-schema.version=master
+      - org.label-schema.vcs-ref=d17e5c66b8d101f9e54d68e1e8540279bbe25467
+      - org.label-schema.vendor=/
+      - org.label-schema.name=reports
+      - org.label-schema.usage=https://gitlab.com//dev1/reports
+      - org.label-schema.schema-version=1.0
+  service-b:
+    image: service-a
+    build:
+      context: "."
+      labels:
+      - org.opencontainers.image.vendor=/
+      - org.opencontainers.image.authors=/
+      - org.opencontainers.image.revision=d17e5c66b8d101f9e54d68e1e8540279bbe25467
+      - org.opencontainers.image.source=https://gitlab.com//dev1/reports
+      - org.opencontainers.image.documentation=https://gitlab.com//dev1/reports
+      - org.opencontainers.image.licenses=https://gitlab.com//dev1/reports
+      - org.opencontainers.image.url=https://gitlab.com//dev1/reports
+      - org.opencontainers.image.title=reports
+      - org.opencontainers.image.version=master
+      - com.gitlab.ci.user=/
+      - com.gitlab.ci.tagorbranch=master
+      - com.gitlab.ci.commiturl=https://gitlab.com//dev1/reports/commit/d17e5c66b8d101f9e54d68e1e8540279bbe25467
+      - com.gitlab.ci.mrurl=https://gitlab.com//dev1/reports/-/merge_requests/
+      - com.gitlab.ci.tag=:d17e5c66b8d101f9e54d68e1e8540279bbe25467
+      - com.gitlab.ci.commit_branch=master
+      - com.gitlab.ci.commit_short_sha=d17e5c66
+      - com.gitlab.ci.commit_timestamp=2022-11-15T17:21:59+03:00
+      - docker.service.name=service-b
       - org.label-schema.url=https://gitlab.com//dev1/reports
       - org.label-schema.vcs-url=https://gitlab.com//dev1/reports
       - org.label-schema.version=master

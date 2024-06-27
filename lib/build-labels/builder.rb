@@ -54,6 +54,7 @@ module BuildLabels
     def extend_compose(compose_text)
       compose = YAML.load compose_text
       compose['services'].each do |name, service|
+        service.delete_if {|k, v| !%w[image build].include? k }
         next unless service['build']
         if service['build'].class == String
           service['build'] = { 'context' => service['build'] }
@@ -68,9 +69,7 @@ module BuildLabels
           end
         end
       end
-      compose['services'].delete_if do |name, svc|
-        ! svc.key?('build')
-      end
+      compose['services'].delete_if do |name, svc| ! svc.key?('build') end
       puts compose.to_yaml
     end
   end

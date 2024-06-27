@@ -6,7 +6,7 @@ This gem allows ...
 build-labels simple-compose.yml | docker-compose build -f -
 
 $ build-labels
-Version: 0.0.15
+Version: 0.0.16
 Usage:
 	build-labels -c docker-compose.yml gitlab
 	cat docker-compose.yml | build-labels gitlab
@@ -51,6 +51,10 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+    ports:
+      - 8080
+    environment:
+      - hello
   service-b:
     image: service-a
     build: .

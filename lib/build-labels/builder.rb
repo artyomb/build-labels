@@ -2,6 +2,8 @@
 require 'yaml'
 require 'ostruct'
 require 'pp'
+require_relative 'yaml_merge'
+
 module BuildLabels
 
   class Builder
@@ -38,7 +40,9 @@ module BuildLabels
     def apply_environment
       @namespaces.each do |ns, struct|
         struct.each_pair do |name, value|
-          value.sub!( /^.*$/, `printf #{value}`) if value.to_s =~ /\$/
+          next unless value.to_s.include? '$'
+          struct[name] = value.gsub(/\$\{(\w+)\}/) { ENV[$1] }
+                              .gsub(/\$(\w+)/) { ENV[$1] }
         end
       end
     end
@@ -52,7 +56,12 @@ module BuildLabels
     end
 
     def extend_compose(compose_text)
-      compose = YAML.load compose_text
+
+      result = YamlMerge::parse_and_process_yaml compose_text
+      compose = YamlMerge::deep_copy_without_aliases result
+
+      # compose = YAML.load compose_text
+
       compose['services'].each do |name, service|
         service.delete_if {|k, v| !%w[image build].include? k }
         next unless service['build']

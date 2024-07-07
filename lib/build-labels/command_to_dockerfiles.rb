@@ -5,7 +5,10 @@ BuildLabels::CommandLine::COMMANDS[:to_dockerfiles] = Class.new do
     raise 'Compose file not defined' unless compose_text
     compose_dir = params[:compose] ? File.dirname(params[:compose]) : '.'
 
-    compose = YAML.load compose_text
+    result = YamlMerge::parse_and_process_yaml compose_text
+    compose = YamlMerge::deep_copy_without_aliases result
+    # compose = YAML.load compose_text
+
     compose['services'].each do |name, svc|
       next unless svc['build']
 

@@ -1,0 +1,30 @@
+x-common-build: &common-build
+  args:
+    - CI_PIPELINE_ID=${CI_PIPELINE_ID}
+    - CI_PIPELINE_IID=${CI_PIPELINE_IID}
+    - CI_NEXUS_CREDENTIALS=${CI_NEXUS_CREDENTIALS}
+    - CI_NEXUS_FOLDER=${CI_NEXUS_FOLDER}
+    - CI_COMMIT_TIMESTAMP=${CI_COMMIT_TIMESTAMP}
+    - CI_PROJECT_PATH_SLUG=${CI_PROJECT_PATH_SLUG}
+    - CI_COMMIT_BRANCH=${CI_COMMIT_BRANCH}
+  context: ../src_mobile_app
+  dockerfile: ../docker/flutter/Dockerfile
+
+services:
+  app_dev:
+    image: ${REGISTRY_HOST}/app/${CI_COMMIT_BRANCH}-dev
+    build:
+      <<: *common-build
+      args:
+        - MAP_BACKEND=dev
+    volumes:
+      - ../docker_build_results_dev:/app/results
+
+  app_prod:
+    image: ${REGISTRY_HOST}/app/${CI_COMMIT_BRANCH}-prod
+    build:
+      <<: *common-build
+      args:
+        - MAP_BACKEND=prod
+    volumes:
+      - ../docker_build_results_prod:/app/results

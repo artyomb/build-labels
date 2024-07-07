@@ -6,7 +6,7 @@ This gem allows ...
 build-labels simple-compose.yml | docker-compose build -f -
 
 $ build-labels
-Version: 0.0.16
+Version: 0.0.19
 Usage:
 	build-labels -c docker-compose.yml gitlab
 	cat docker-compose.yml | build-labels gitlab
@@ -82,6 +82,7 @@ services:
       - org.opencontainers.image.vendor=/
       - org.opencontainers.image.authors=/
       - org.opencontainers.image.revision=d17e5c66b8d101f9e54d68e1e8540279bbe25467
+      - org.opencontainers.image.ref.name=:master
       - org.opencontainers.image.source=https://gitlab.com//dev1/reports
       - org.opencontainers.image.documentation=https://gitlab.com//dev1/reports
       - org.opencontainers.image.licenses=https://gitlab.com//dev1/reports
@@ -113,6 +114,7 @@ services:
       - org.opencontainers.image.vendor=/
       - org.opencontainers.image.authors=/
       - org.opencontainers.image.revision=d17e5c66b8d101f9e54d68e1e8540279bbe25467
+      - org.opencontainers.image.ref.name=:master
       - org.opencontainers.image.source=https://gitlab.com//dev1/reports
       - org.opencontainers.image.documentation=https://gitlab.com//dev1/reports
       - org.opencontainers.image.licenses=https://gitlab.com//dev1/reports

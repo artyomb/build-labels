@@ -6,7 +6,7 @@ This gem allows ...
 build-labels simple-compose.yml | docker-compose build -f -
 
 $ build-labels
-Version: 0.0.19
+Version: 0.0.20
 Usage:
 	build-labels -c docker-compose.yml gitlab
 	cat docker-compose.yml | build-labels gitlab
@@ -18,6 +18,7 @@ Commands:
      gitlab -  Use GitLab CI variables
      cache -  Add cache section
      print -  Print labels to stdout
+     set_version -  Add version tag from [docker_context]/.version file to image
 
 Options:
     -c, --compose COMPOSE_FILE       Compose file

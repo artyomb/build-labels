@@ -10,6 +10,7 @@ require 'build-labels/command_to_dockerfiles'
 require 'build-labels/command_gitlab'
 require 'build-labels/command_cache'
 require 'build-labels/command_print'
+require 'build-labels/command_set_version'
 
 include BuildLabels
 

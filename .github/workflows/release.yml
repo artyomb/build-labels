@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: ruby/setup-ruby@v1
-        with: { ruby-version: '3.3.2' }
+        with: { ruby-version: '3.1.2' }
       - run: |
           mkdir -p $HOME/.gem && touch $HOME/.gem/credentials && chmod 0600 $HOME/.gem/credentials
           echo "---\n:rubygems_api_key: ${RUBYGEMS_API_KEY}\n" > $HOME/.gem/credentials

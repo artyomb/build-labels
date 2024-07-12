@@ -5,32 +5,21 @@ BuildLabels::CommandLine::COMMANDS[:cache] = Class.new do
     parser.on('', '--cache-from CACHE FROM', 'type=[local,registry] ... ')
     parser.on('', '--cache-to CACHE TO', 'type=[local,registry] ...')
   end
-  def run(builder, params, compose_text)
-    compose = YAML.load compose_text
+  def run(builder, params, compose)
     compose['services'].each do |service_name, service|
       next unless service['build']
 
-      if service['build'].class == String
-        service['build'] = { 'context' => service['build'] }
-      end
-      # p params
-      # registry = params[:registry]
-      image = service['image'].gsub( /:.*/, '')
-      if params[:'cache-from']
-        service['build']['cache_from'] = [ params[:'cache-from'] % {image: image, service_name: service_name} ]
-      else
-        service['build']['cache_from'] = [ "type=registry,ref=#{image}:cache" ]
-      end
+      service['build'] = { 'context' => service['build'] } if service['build'].is_a?(String)
 
-      if params[:'cache-to']
-        service['build']['cache_to'] = [ params[:'cache-to'] % {image: image, service_name: service_name} ]
-      else
-        service['build']['cache_to'] = [ "type=registry,ref=#{image}:cache,mode=max" ]
-      end
-      # #        - type=local,src=./.cache
-      # #        - type=local,dest=./.cache,mode=max
+      image = service['image'].split(':').first
+      cache_from = params[:'cache-from'] || "type=registry,ref=#{image}:cache"
+      cache_to = params[:'cache-to'] || "type=registry,ref=#{image}:cache,mode=max"
+
+      service['build']['cache_from'] = [format(cache_from, image: image, service_name: service_name)]
+      service['build']['cache_to'] = [format(cache_to, image: image, service_name: service_name)]
     end
-    compose_text.replace compose.to_yaml
+    #        - type=local,src=./.cache
+    #        - type=local,dest=./.cache,mode=max
   end
 
   def help = 'Add cache section'

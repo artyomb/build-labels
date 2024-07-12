@@ -55,6 +55,8 @@ module BuildLabels
           compose_text = File.read(params[:compose]) if params[:compose]
           compose_text ||= STDIN.read unless $stdin.tty?
 
+          result = YamlMerge.parse_and_process_yaml compose_text
+          compose_text = YamlMerge.deep_copy_without_aliases result
           builder = Builder.new
 
           #  eval $(grep -v -e '^#' .build_info | xargs -I {} echo export \'{}\') && echo $CI_COMMIT_AUTHOR

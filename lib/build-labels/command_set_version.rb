@@ -5,12 +5,8 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
   #   parser.on('', '--set-version', '')
   # end
 
-  def run(builder, params, compose_text)
-    raise 'Compose file not defined' unless compose_text
-
-    result = YamlMerge::parse_and_process_yaml compose_text
-    compose = YamlMerge::deep_copy_without_aliases result
-    # compose = YAML.load compose_text
+  def run(builder, params, compose)
+    raise 'Compose file not defined' unless compose
 
     compose_dir = params[:compose] ? File.dirname(params[:compose]) : '.'
 
@@ -26,7 +22,6 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
       svc['image'] = "#{image}:#{current_version}#{tag ? "-" + tag : ""}"
     end
 
-    compose_text.replace compose.to_yaml
   end
 
   def help = 'Add version tag from [docker_context]/.version file to image'

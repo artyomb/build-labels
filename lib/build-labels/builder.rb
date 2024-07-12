@@ -54,31 +54,23 @@ module BuildLabels
         yield ns, values
       end
     end
-
-    def extend_compose(compose_text)
-
-      result = YamlMerge::parse_and_process_yaml compose_text
-      compose = YamlMerge::deep_copy_without_aliases result
-
-      # compose = YAML.load compose_text
-
-      compose['services'].each do |name, service|
-        service.delete_if {|k, v| !%w[image build].include? k }
+    def extend_compose(compose)
+      compose['services'].transform_values! do |service|
         next unless service['build']
-        if service['build'].class == String
-          service['build'] = { 'context' => service['build'] }
-        end
+        service.slice!('image', 'build')
+        service['build'] = { 'context' => service['build'] } if service['build'].is_a?(String)
         service['build']['labels'] ||= []
-        add_namespace :dc, 'docker.service'
-        self.dc.name = name
+        add_namespace(:dc, 'docker.service')
+        self.dc.name = service['name']
 
         each_labels do |ns, values|
-          values.each_pair do |k,v|
+          values.each do |k, v|
             service['build']['labels'] << "#{ns}.#{k}=#{v}" unless v.to_s.empty?
           end
         end
-      end
-      compose['services'].delete_if do |name, svc| ! svc.key?('build') end
+        service
+      end.compact!
+
       puts compose.to_yaml
     end
   end

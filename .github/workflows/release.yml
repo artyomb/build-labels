@@ -1,4 +1,4 @@
-on: { push: { branches: [release] } }
+on: { push: { branches: [main] } }
 
 jobs:
   build_and_publish:

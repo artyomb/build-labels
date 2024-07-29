@@ -20,6 +20,12 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
       image = svc['image'].gsub( /:.*/, '')
       tag = svc['image'][/:(.*)/, 1]
       svc['image'] = "#{image}:#{current_version}#{tag ? "-" + tag : ""}"
+      next unless svc['build']['tags']
+      svc['build']['tags'] = svc['build']['tags'].map do |t|
+        image = t.gsub( /:.*/, '')
+        tag = t[/:(.*)/, 1]
+        "#{image}:#{current_version}#{tag ? "-" + tag : ""}"
+      end
     end
 
   end

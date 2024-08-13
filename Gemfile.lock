@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    build-labels (0.0.21)
+    build-labels (0.0.23)
 
 GEM
   remote: https://rubygems.org/

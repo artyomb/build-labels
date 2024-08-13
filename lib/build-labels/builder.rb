@@ -55,21 +55,23 @@ module BuildLabels
       end
     end
     def extend_compose(compose)
-      compose['services'].transform_values! do |service|
+      compose['services'].each do |name, service|
+        service.delete_if {|k, v| !%w[image build].include? k }
         next unless service['build']
-        service = service.slice('image', 'build')
-        service['build'] = { 'context' => service['build'] } if service['build'].is_a?(String)
+        if service['build'].class == String
+          service['build'] = { 'context' => service['build'] }
+        end
         service['build']['labels'] ||= []
-        add_namespace(:dc, 'docker.service')
-        self.dc.name = service['name']
+        add_namespace :dc, 'docker.service'
+        self.dc.name = name
 
         each_labels do |ns, values|
-          values.each do |k, v|
+          values.each_pair do |k,v|
             service['build']['labels'] << "#{ns}.#{k}=#{v}" unless v.to_s.empty?
           end
         end
-        service
-      end.compact!
+      end
+      compose['services'].delete_if do |name, svc| ! svc.key?('build') end
 
       puts compose.to_yaml
     end

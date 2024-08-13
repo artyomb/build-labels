@@ -57,7 +57,7 @@ module BuildLabels
     def extend_compose(compose)
       compose['services'].transform_values! do |service|
         next unless service['build']
-        service.slice!('image', 'build')
+        service = service.slice('image', 'build')
         service['build'] = { 'context' => service['build'] } if service['build'].is_a?(String)
         service['build']['labels'] ||= []
         add_namespace(:dc, 'docker.service')

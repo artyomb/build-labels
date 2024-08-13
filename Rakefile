@@ -30,6 +30,12 @@ end
 desc 'Pre commit'
 task commit: %i[spec readme]
 
+desc 'Build'
+task build: %i[spec readme] do |t|
+  puts 'Build'
+  system 'gem build build-labels.gemspec' or exit 1
+end
+
 desc 'Build&push new version'
 task push: %i[spec readme] do |t|
   puts 'Build&push new version'

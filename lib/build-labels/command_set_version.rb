@@ -28,7 +28,7 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
 
       tag = apply_gitlab_tag(tag)
       full_tag = [current_version, tag].compact.join '-'
-      full_tag = full_tag.empty? ? ":#{full_tag}" : ''
+      full_tag = full_tag.empty? ? '' : ":#{full_tag}"
 
       svc['image'] = "#{image}#{full_tag}"
 
@@ -39,7 +39,7 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
         tag = apply_gitlab_tag(tag)
 
         full_tag = [current_version, tag].compact.join '-'
-        full_tag = full_tag.empty? ? ":#{full_tag}" : ''
+        full_tag = full_tag.empty? ? '' : ":#{full_tag}"
 
         "#{image}#{full_tag}"
       end

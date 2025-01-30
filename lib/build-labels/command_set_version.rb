@@ -1,14 +1,13 @@
 require_relative 'command_line'
 
 BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
-  # def options(parser)
-  #   parser.on('', '--set-version', '')
-  # end
+  def commit_message_commands(version)
+    return version unless (match = ENV['CI_COMMIT_MESSAGE']&.match(/#push:(\w+)/i))
 
-  def apply_gitlab_tag(tag)
-    return tag if ENV['CI_COMMIT_TAG'].to_s.empty?
-    git_tag = ENV['CI_COMMIT_TAG']
-    [tag,git_tag].compact.join '-'
+    puts 'Debug: Push command detected in commit message'
+    version = '0.0' if version.to_s.empty?
+    tag = match[1] ? "-#{match[1]}" : ''
+    "#{version}.#{ENV['CI_PIPELINE_IID']}#{tag}"
   end
 
   def run(builder, params, compose)
@@ -23,10 +22,11 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
       versionfile = File.expand_path versionfile, compose_dir
 
       current_version = File.exist?( versionfile) ? File.read(versionfile).strip : nil
+      current_version = commit_message_commands(current_version)
+
       image = svc['image'].gsub( /:.*/, '')
       tag = svc['image'][/:(.*)/, 1]
 
-      tag = apply_gitlab_tag(tag)
       full_tag = [current_version, tag].compact.join '-'
       full_tag = full_tag.empty? ? '' : ":#{full_tag}"
 
@@ -34,20 +34,14 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
 
       next unless svc['build']['tags']
       svc['build']['tags'] = svc['build']['tags'].map do |t|
-        image = t.gsub( /:.*/, '')
-        tag = t[/:(.*)/, 1]
-        tag = apply_gitlab_tag(tag)
-
-        full_tag = [current_version, tag].compact.join '-'
-        full_tag = full_tag.empty? ? '' : ":#{full_tag}"
-
-        "#{image}#{full_tag}"
+        image, tag = t.split(':')
+        full_tag = [current_version, tag].compact.join('-')
+        "#{image}#{full_tag.empty? ? '' : ":#{full_tag}"}"
       end
     end
-
   end
 
-  def help = 'Add version tag from [docker_context]/.version file to image'
+  def help
+    'Add version tag from [docker_context]/.version file to image'
+  end
 end.new
-
-

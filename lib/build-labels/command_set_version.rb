@@ -2,9 +2,9 @@ require_relative 'command_line'
 
 BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
   def commit_message_commands(version)
-    return version unless (match = ENV['CI_COMMIT_MESSAGE']&.match(/#push:(\w+)/i))
+    return version unless (match = ENV['CI_COMMIT_MESSAGE']&.match(/#push:(\w+)/mi))
 
-    puts 'Debug: Push command detected in commit message'
+    #Push command detected in commit message
     version = '0.0' if version.to_s.empty?
     tag = match[1] ? "-#{match[1]}" : ''
     "#{version}.#{ENV['CI_PIPELINE_IID']}#{tag}"

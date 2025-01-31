@@ -29,7 +29,7 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
       if ENV['CI_COMMIT_MESSAGE'].to_s =~ /#push/mi
         full_version = "#{current_version.to_s.empty? ? '0.0' : current_version}.#{ENV['CI_PIPELINE_IID']}"
 
-        push_tag = ENV['CI_COMMIT_MESSAGE']&[/#push:(\w+)/mi, 1]
+        push_tag = ENV['CI_COMMIT_MESSAGE'].to_s[/#push:(\w+)/mi, 1]
 
         svc['build']['tags'] += svc['build']['tags'].map do |t|
           image, tag = t.split(':')

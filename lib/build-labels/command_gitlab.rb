@@ -26,6 +26,8 @@ BuildLabels::CommandLine::COMMANDS[:gitlab] = Class.new do
     builder.gitlab.commit_branch = '$CI_COMMIT_BRANCH'
     builder.gitlab.commit_short_sha = '$CI_COMMIT_SHORT_SHA'
     builder.gitlab.commit_timestamp = '$CI_COMMIT_TIMESTAMP'
+    builder.gitlab.pipeline_id = '$CI_PIPELINE_ID'
+    builder.gitlab.pipeline_iid = '$CI_PIPELINE_IID'
 
     # org.opencontainers.image.title BUILDTITLE=$(echo $CI_PROJECT_TITLE | tr " " "_")
     # org.opencontainers.image.description

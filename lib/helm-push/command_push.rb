@@ -24,9 +24,10 @@ HelmPush::CommandLine::COMMANDS[:push] = Class.new do
         if tag =~ Regexp.new(version_mask)
           puts "Package and Push Helm for the image #{full_tag}"
 
+          exec "helm repo add mons --username ${CI_HELM_USER} --password ${CI_HELM_PASSWORD} ${CI_HELM_HOST}"
           exec "helm dependency update helm/#{service_name}"
           exec "helm package helm/#{service_name} --app-version #{tag} --version #{tag} --destination helm/"
-          exec "curl -u ${HELM_USER}:${HELM_PASSWORD} --upload-file helm/#{service_name}-#{tag}.tgz ${HELM_HOST}"
+          exec "curl -u ${CI_HELM_USER}:${CI_HELM_PASSWORD} --upload-file helm/#{service_name}-#{tag}.tgz ${CI_HELM_HOST}"
         else
           puts "Skip Helm package and Push for the tag #{tag}"
         end

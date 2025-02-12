@@ -24,6 +24,7 @@ HelmPush::CommandLine::COMMANDS[:push] = Class.new do
         if tag =~ Regexp.new(version_mask)
           puts "Package and Push Helm for the image #{full_tag}"
 
+          exec "helm dependency update helm/#{service_name}"
           exec "helm package helm/#{service_name} --app-version #{tag} --version #{tag} --destination helm/"
           exec "curl -u ${HELM_USER}:${HELM_PASSWORD} --upload-file helm/#{service_name}-#{tag}.tgz ${HELM_HOST}"
         else

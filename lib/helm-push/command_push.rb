@@ -1,5 +1,9 @@
 require_relative 'command_line'
 
+def exec(cmd)
+  system(cmd) or raise("Failed to run cmd:\n#{cmd}")
+end
+
 HelmPush::CommandLine::COMMANDS[:push] = Class.new do
   def run(params, compose)
     raise 'Compose file not defined' unless compose
@@ -20,8 +24,8 @@ HelmPush::CommandLine::COMMANDS[:push] = Class.new do
         if tag =~ Regexp.new(version_mask)
           puts "Package and Push Helm for the image #{full_tag}"
 
-          system "helm package helm/#{service_name} --app-version #{tag} --version #{tag} --destination helm/" or raise("helm package failed")
-          system "curl -u ${HELM_USER}:${HELM_PASSWORD} --upload-file helm/#{service_name}-#{tag}.tgz ${HELM_HOST}" or raise("helm push failed")
+          exec "helm package helm/#{service_name} --app-version #{tag} --version #{tag} --destination helm/"
+          exec "curl -u ${HELM_USER}:${HELM_PASSWORD} --upload-file helm/#{service_name}-#{tag}.tgz ${HELM_HOST}"
         else
           puts "Skip Helm package and Push for the tag #{tag}"
         end

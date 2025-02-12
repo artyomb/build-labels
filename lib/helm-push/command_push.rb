@@ -22,6 +22,8 @@ HelmPush::CommandLine::COMMANDS[:push] = Class.new do
 
           system "helm package helm/#{service_name} --app-version #{tag} --version #{tag} --destination helm/" or raise("helm package failed")
           system "curl -u ${HELM_USER}:${HELM_PASSWORD} --upload-file helm/#{service_name}-#{tag}.tgz ${HELM_HOST}" or raise("helm push failed")
+        else
+          puts "Skip Helm package and Push for the tag #{tag}"
         end
       end
     end

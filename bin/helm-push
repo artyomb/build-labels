@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+lib = File.expand_path('../lib', __dir__)
+$LOAD_PATH << lib
+#$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+require 'helm-push/command_line'
+require 'helm-push/command_push'
+
+HelmPush::CommandLine.run ARGV

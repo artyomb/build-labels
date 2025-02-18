@@ -1,6 +1,6 @@
 require_relative 'command_line'
 
-BuildHUBels::CommandLine::COMMANDS[:githab] = Class.new do
+BuildLabels::CommandLine::COMMANDS[:github] = Class.new do
   def run(builder, params, compose_text)
     builder.oc.vendor = 'GITHUB_SERVER_URL/$GITHUB_TRIGGERING_ACTOR'
     builder.oc.authors = 'GITHUB_SERVER_URL/$GITHUB_TRIGGERING_ACTOR'

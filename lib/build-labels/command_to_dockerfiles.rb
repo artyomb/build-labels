@@ -21,7 +21,7 @@ BuildLabels::CommandLine::COMMANDS[:to_dockerfiles] = Class.new do
           next if v.to_s.empty?
 
           name = "#{ns}.#{k}".gsub('.', '_').upcase
-          line = "ENV #{name}=\"#{v}\""
+          line = %Q(ENV #{name}=#{v.inspect})
           dockerfile_lines.push line unless dockerfile_lines.grep(/ENV\s+#{name}=/).any?
         end
       end

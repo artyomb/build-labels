@@ -28,7 +28,7 @@ BuildLabels::CommandLine::COMMANDS[:gitlab] = Class.new do
     builder.gitlab.commit_timestamp = '$CI_COMMIT_TIMESTAMP'
     builder.gitlab.pipeline_id = '$CI_PIPELINE_ID'
     builder.gitlab.pipeline_iid = '$CI_PIPELINE_IID'
-    builder.gitlab.commit_message = "#{ENV['CI_COMMIT_MESSAGE']}".gsub("\n", "\\n")
+    builder.gitlab.commit_message = '$CI_COMMIT_MESSAGE'
 
     # org.opencontainers.image.title BUILDTITLE=$(echo $CI_PROJECT_TITLE | tr " " "_")
     # org.opencontainers.image.description

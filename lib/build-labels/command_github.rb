@@ -15,7 +15,7 @@ BuildLabels::CommandLine::COMMANDS[:github] = Class.new do
     # builder.oc.version = '$CI_COMMIT_REF_NAME' # $CI_COMMIT_TAG
 
     builder.add_namespace :github, 'com.github.ci'
-    builder.github.build_time = Time.now
+    builder.github.build_time = "#{Time.now}"
     builder.github.user = '$GITHUB_SERVER_URL/$GITHUB_TRIGGERING_ACTOR'
     # builder.github.email = '$GITLAB_USER_EMAIL'
     # builder.github.tagorbranch = '$CI_COMMIT_REF_NAME'

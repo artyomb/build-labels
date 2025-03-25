@@ -11,7 +11,7 @@ BuildLabels::CommandLine::COMMANDS[:github] = Class.new do
     builder.oc.licenses = '$GITHUB_SERVER_URL/$GITHUB_REPOSITORY'
     builder.oc.url = '$GITHUB_SERVER_URL/$GITHUB_REPOSITORY'
     # builder.oc.title = '$CI_PROJECT_TITLE'
-    # builder.oc.created = '$CI_JOB_STARTED_AT'
+    builder.oc.created = "#{Time.now}"
     # builder.oc.version = '$CI_COMMIT_REF_NAME' # $CI_COMMIT_TAG
 
     builder.add_namespace :github, 'com.github.ci'

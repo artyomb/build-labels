@@ -11,11 +11,11 @@ BuildLabels::CommandLine::COMMANDS[:github] = Class.new do
     builder.oc.licenses = '$GITHUB_SERVER_URL/$GITHUB_REPOSITORY'
     builder.oc.url = '$GITHUB_SERVER_URL/$GITHUB_REPOSITORY'
     # builder.oc.title = '$CI_PROJECT_TITLE'
-    builder.oc.created = "#{Time.now}"
+    builder.oc.created = "#{Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")}"
     # builder.oc.version = '$CI_COMMIT_REF_NAME' # $CI_COMMIT_TAG
 
     builder.add_namespace :github, 'com.github.ci'
-    builder.github.build_time = "#{Time.now}"
+    builder.github.build_time = "#{Time.now.utc.strftime("%Y-%m-%dT%H:%M:%SZ")}"
     builder.github.user = '$GITHUB_SERVER_URL/$GITHUB_TRIGGERING_ACTOR'
     # builder.github.email = '$GITLAB_USER_EMAIL'
     # builder.github.tagorbranch = '$CI_COMMIT_REF_NAME'

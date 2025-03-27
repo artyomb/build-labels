@@ -53,7 +53,7 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
 
       # add latest tag
       if svc['image'].split(':').size == 1
-        svc['build']['tags'] += "#{svc['image']}:latest"
+        svc['build']['tags'] << "#{svc['image']}:latest"
       end
     end
   end

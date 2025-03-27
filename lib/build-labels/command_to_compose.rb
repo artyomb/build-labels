@@ -1,6 +1,10 @@
 require_relative 'command_line'
 
 BuildLabels::CommandLine::COMMANDS[:to_compose] = Class.new do
+  def options(parser)
+    parser.on('', '--except FILTER', 'filter services ')
+  end
+
   def run(builder, params, compose)
     raise 'Compose file not defined' unless compose
 

@@ -1,6 +1,9 @@
 require_relative 'command_line'
 
 BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
+  def options(parser)
+    parser.on('', '--full-version', 'Push full version tag')
+  end
 
   def run(builder, params, compose)
     raise 'Compose file not defined' unless compose
@@ -30,6 +33,11 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
       end
 
       build_id = ENV['GITHUB_RUN_NUMBER'] || ENV['CI_PIPELINE_IID']
+      unless build_id
+        puts "Build ID not found. Please set GITHUB_RUN_NUMBER or CI_PIPELINE_IID environment variable"
+        exit 1
+      end
+
       full_version = "#{current_version}.#{build_id}"
       builder.oc.version = full_version
 
@@ -40,12 +48,12 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
         [image, full_tag].compact.join ':'
       end
 
-      if ENV['CI_COMMIT_MESSAGE'].to_s =~ /#push/mi
+      if ENV['CI_COMMIT_MESSAGE'].to_s =~ /#push/mi || params[:full_version]
         push_tag = ENV['CI_COMMIT_MESSAGE'].to_s[/#push:(\S+)/mi, 1]
 
         svc['build']['tags'] += svc['build']['tags'].map do |t|
-          image, tag = t.split(':')
-          full_tag = [full_version, push_tag || tag].compact.join('-')
+          image, _tag = t.split(':')
+          full_tag = [full_version, push_tag].compact.join('-')
 
           [image, full_tag].compact.join ':'
         end

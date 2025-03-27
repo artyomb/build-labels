@@ -7,7 +7,7 @@ x-common-build: &common-build
     - CI_COMMIT_TIMESTAMP=${CI_COMMIT_TIMESTAMP}
     - CI_PROJECT_PATH_SLUG=${CI_PROJECT_PATH_SLUG}
     - CI_COMMIT_BRANCH=${CI_COMMIT_BRANCH}
-  context: ../src_mobile_app
+  context: ./src_app
   dockerfile: ../docker/flutter/Dockerfile
 
 services:

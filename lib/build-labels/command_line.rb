@@ -51,6 +51,7 @@ module BuildLabels
           o.on('-h', '--help') { puts o; exit }
           rest = o.parse! args, into: params
 
+          params.transform_keys!{_1.to_s.gsub('-','_').to_sym}
 
           compose_text = File.read(params[:compose]) if params[:compose]
           compose_text ||= STDIN.read unless $stdin.tty?

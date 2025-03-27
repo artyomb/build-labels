@@ -6,7 +6,7 @@ This gem allows ...
 build-labels simple-compose.yml | docker-compose build -f -
 
 $ build-labels
-Version: 0.0.22
+Version: 0.0.51
 Usage:
 	build-labels -c docker-compose.yml gitlab
 	cat docker-compose.yml | build-labels gitlab
@@ -16,6 +16,7 @@ Commands:
      to_compose -  Add labels to all build sections of docker-compose file
      to_dockerfiles -  Add ENVs to Dockerfiles from docker-compose file
      gitlab -  Use GitLab CI variables
+     github -  Use GitHub CI variables
      cache -  Add cache section
      print -  Print labels to stdout
      set_version -  Add version tag from [docker_context]/.version file to image
@@ -98,6 +99,7 @@ services:
       - com.gitlab.ci.commit_branch=master
       - com.gitlab.ci.commit_short_sha=d17e5c66
       - com.gitlab.ci.commit_timestamp=2022-11-15T17:21:59+03:00
+      - com.gitlab.ci.commit_message=update
       - docker.service.name=service-a
       - org.label-schema.url=https://gitlab.com//dev1/reports
       - org.label-schema.vcs-url=https://gitlab.com//dev1/reports
@@ -130,6 +132,7 @@ services:
       - com.gitlab.ci.commit_branch=master
       - com.gitlab.ci.commit_short_sha=d17e5c66
       - com.gitlab.ci.commit_timestamp=2022-11-15T17:21:59+03:00
+      - com.gitlab.ci.commit_message=update
       - docker.service.name=service-b
       - org.label-schema.url=https://gitlab.com//dev1/reports
       - org.label-schema.vcs-url=https://gitlab.com//dev1/reports

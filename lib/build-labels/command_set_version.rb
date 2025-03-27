@@ -2,7 +2,7 @@ require_relative 'command_line'
 
 BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
 
-  def run(_builder, params, compose)
+  def run(builder, params, compose)
     raise 'Compose file not defined' unless compose
 
     compose_dir = params[:compose] ? File.dirname(params[:compose]) : '.'
@@ -17,7 +17,19 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
       version_file = File.join version_file, '.version'
       version_file = File.expand_path version_file, compose_dir
 
-      current_version = File.exist?( version_file) ? File.read(version_file).strip : nil
+      unless File.exist?(version_file)
+        puts "Version file not found: #{version_file}"
+        exit 1
+      end
+
+      current_version = File.read(version_file).strip
+      unless current_version =~ /\d+(\.\d+)*/
+        puts "Invalid version file: #{version_file}. Expected version in format: numbers separated by dots (e.g. 1.2.3)"
+        exit 1
+      end
+
+      full_version = "#{current_version}.#{ENV['CI_PIPELINE_IID']}"
+      builder.oc.version = full_version
 
       svc['build']['tags'] = svc['build']['tags'].map do |t|
         image, tag = t.split(':')
@@ -27,8 +39,6 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
       end
 
       if ENV['CI_COMMIT_MESSAGE'].to_s =~ /#push/mi
-        full_version = "#{current_version.to_s.empty? ? '0.0' : current_version}.#{ENV['CI_PIPELINE_IID']}"
-
         push_tag = ENV['CI_COMMIT_MESSAGE'].to_s[/#push:(\S+)/mi, 1]
 
         svc['build']['tags'] += svc['build']['tags'].map do |t|

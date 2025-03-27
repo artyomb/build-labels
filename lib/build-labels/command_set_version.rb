@@ -9,6 +9,7 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
 
     compose['services'].each do |_name, svc|
       next unless svc['build']
+
       unless svc['build']['tags']
         svc['build']['tags'] = [svc['image']]
       end
@@ -50,6 +51,10 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
         end
       end
 
+      # add latest tag
+      if svc['image'].split(':').size == 1
+        svc['build']['tags'] += "#{svc['image']}:latest"
+      end
     end
   end
 

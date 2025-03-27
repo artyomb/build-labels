@@ -13,3 +13,4 @@ jobs:
           bundle install && rake push
         env:
           API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}

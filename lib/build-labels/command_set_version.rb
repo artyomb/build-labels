@@ -28,7 +28,8 @@ BuildLabels::CommandLine::COMMANDS[:set_version] = Class.new do
         exit 1
       end
 
-      full_version = "#{current_version}.#{ENV['CI_PIPELINE_IID']}"
+      build_id = ENV['GITHUB_RUN_NUMBER'] || ENV['CI_PIPELINE_IID']
+      full_version = "#{current_version}.#{build_id}"
       builder.oc.version = full_version
 
       svc['build']['tags'] = svc['build']['tags'].map do |t|

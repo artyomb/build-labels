@@ -61,6 +61,11 @@ module BuildLabels
         if service['build'].class == String
           service['build'] = { 'context' => service['build'] }
         end
+
+        if ENV['CI_BUILD_TARGET']
+          service['build']['target'] = ENV['CI_BUILD_TARGET']
+        end
+
         service['build']['labels'] ||= []
         add_namespace :dc, 'docker.service'
         self.dc.name = name

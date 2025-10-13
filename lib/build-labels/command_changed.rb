@@ -22,14 +22,14 @@ BuildLabels::CommandLine::COMMANDS[:changed] = Class.new do
       ad = service.dig('build','additional_contexts') || []
       ad = ad.class == Hash ? ad.values : ad.map{_1[/=(.*)/,1]}
       contexts = [service.dig('build','context')] + ad
-      contexts = contexts.flatten.compact.map{File::absolute_path(git_root + '/' + _1) + '/' }
+      contexts = contexts.flatten.compact.map{File::absolute_path(dc_folder + '/' + _1) + '/' }
       contexts << File::absolute_path(service.dig('build','dockerfile'))
 
 
       should_build = contexts.any? do |path|
         $stderr.puts "Checking '#{path}' for changes..."
         Dir.chdir path do
-          files = changed_files.map{ File::absolute_path(ch_folder + '/' + _1) }
+          files = changed_files.map{ File::absolute_path(git_root + '/' + _1) }
                                .select {
                                  $stdout.puts "cmp #{_1} == #{path} "
                                  _1.index(path) == 0

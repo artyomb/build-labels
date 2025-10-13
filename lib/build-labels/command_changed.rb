@@ -23,7 +23,7 @@ BuildLabels::CommandLine::COMMANDS[:changed] = Class.new do
       should_build = contexts.any? do |path|
         $stderr.puts "Checking #{path} for changes..."
         Dir.chdir path do
-          files = `git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA`.split("\n").map(&:strip).delete_if(:empty?)
+          files = `git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA`.split("\n").map(&:strip).delete_if(&:empty?)
 
           if files.any?
             $stderr.puts "changes found:"

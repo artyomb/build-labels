@@ -6,9 +6,8 @@ BuildLabels::CommandLine::COMMANDS[:changed] = Class.new do
   end
 
   def run(builder, params, compose)
-    dc_folder = params[:'changes-compose'] || __dir__
-    ch_folder = params[:'changes-git'] || __dir__
-    $stderr.puts "Changes Compose: #{ch_folder}, Changes Git: #{ch_folder}, CI_COMMIT_BEFORE_SHA: #{ENV['CI_COMMIT_BEFORE_SHA']}, CI_COMMIT_SHA: #{ENV['CI_COMMIT_SHA']}"
+    dc_folder = params[:'changes-compose'] || Dir.pwd
+    $stderr.puts "Changes Compose: #{ch_folder}, CI_COMMIT_BEFORE_SHA: #{ENV['CI_COMMIT_BEFORE_SHA']}, CI_COMMIT_SHA: #{ENV['CI_COMMIT_SHA']}"
 
     compose['services'].each do |service_name, service|
       next unless service['build']

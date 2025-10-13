@@ -12,6 +12,7 @@ require 'build-labels/command_github'
 require 'build-labels/command_cache'
 require 'build-labels/command_print'
 require 'build-labels/command_set_version'
+require 'build-labels/command_changed'
 
 include BuildLabels
 

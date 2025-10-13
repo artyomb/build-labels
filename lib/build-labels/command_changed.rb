@@ -31,7 +31,7 @@ BuildLabels::CommandLine::COMMANDS[:changed] = Class.new do
         Dir.chdir path do
           files = changed_files.map{ File::absolute_path(git_root + '/' + _1) }
                                .select {
-                                 $stdout.puts "cmp #{_1} == #{path} "
+                                 $stderr.puts "cmp #{_1} == #{path} "
                                  _1.index(path) == 0
                                }
 
@@ -47,7 +47,7 @@ BuildLabels::CommandLine::COMMANDS[:changed] = Class.new do
 
       $stderr.puts "should_build: #{should_build}"
 
-      service.delete 'build' unless should_build
+      compose['services'].delete service_name  unless should_build
     end
 
   end

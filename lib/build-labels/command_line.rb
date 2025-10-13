@@ -71,7 +71,7 @@ module BuildLabels
           end
         rescue => e
           puts e.message
-          exit 1
+          ENV['DEBUG'] ? raise : exit(1)
         end
       end
     end

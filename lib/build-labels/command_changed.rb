@@ -28,20 +28,18 @@ BuildLabels::CommandLine::COMMANDS[:changed] = Class.new do
 
       should_build = contexts.any? do |path|
         $stderr.puts "Checking '#{path}' for changes..."
-        Dir.chdir path do
-          files = changed_files.map{ File::absolute_path(git_root + '/' + _1) }
-                               .select {
-                                 $stderr.puts "cmp #{_1} == #{path} "
-                                 _1.index(path) == 0
-                               }
+        files = changed_files.map{ File::absolute_path(git_root + '/' + _1) }
+                             .select {
+                               $stderr.puts "cmp #{_1} == #{path} "
+                               _1.index(path) == 0
+                             }
 
-          if files.any?
-            $stderr.puts "changes found:"
-            files[0..3].each{ $stderr.puts "\t#{_1}" }
-            next true
-          else
-            false
-          end
+        if files.any?
+          $stderr.puts "changes found:"
+          files[0..3].each{ $stderr.puts "\t#{_1}" }
+          next true
+        else
+          false
         end
       end
 

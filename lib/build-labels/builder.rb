@@ -68,6 +68,8 @@ module BuildLabels
             service['network_mode'] = 'host'
             service['volumes'] = ['/var/run/docker.sock:/var/run/docker.sock']
           end
+
+          service['build']['tags'] = service['build']['tags'].map { |t| "#{t}-#{ENV['CI_BUILD_TARGET']}" }
         end
 
         service['build']['labels'] ||= []

@@ -70,6 +70,7 @@ module BuildLabels
           end
 
           service['build']['tags'] = service['build']['tags'].map { |t| "#{t}-#{ENV['CI_BUILD_TARGET']}" }
+          service['image'] = service['build']['tags'].first
         end
 
         service['build']['labels'] ||= []

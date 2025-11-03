@@ -64,6 +64,10 @@ module BuildLabels
 
         if ENV['CI_BUILD_TARGET']
           service['build']['target'] = ENV['CI_BUILD_TARGET']
+          if ENV['CI_BUILD_TARGET'] == 'tests'
+            service['network_mode'] = 'host'
+            service['volumes'] = ['/var/run/docker.sock:/var/run/docker.sock']
+          end
         end
 
         service['build']['labels'] ||= []

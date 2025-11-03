@@ -1,3 +1,15 @@
+```
+git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA | tee ../changes.txt && \
+./dc-build.rb -c docker-compose.yml -f ../changes.txt > docker-compose.build.yml && \
+./dc-build.rb -c docker-compose.demo.yml -f ../changes.txt > docker-compose.demo.build.yml && \
+build-labels -n -c docker-compose.build.yml gitlab set_version to_dockerfiles to_compose | tee bake.yml && \
+build-labels -n -c docker-compose.demo.build.yml gitlab set_version to_dockerfiles to_compose | tee bake.demo.yml && \
+export OTEL_RESOURCE_ATTRIBUTES=service.name=docker-builder,pipeline.id=${CI_PIPELINE_ID},project.name=${CI_PROJECT_NAME} && \
+grep \"services: {}\" bake.yml || REGISTRY_HOST=$CI_REGISTRY_HOST docker buildx bake -f bake.yml --push && \
+grep \"services: {}\" bake.demo.yml || REGISTRY_HOST=$CI_REGISTRY_HOST docker buildx bake -f bake.yml --push \
+
+```
+
 # build-labels
 
 This gem allows ...  

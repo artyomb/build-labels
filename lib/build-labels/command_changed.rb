@@ -11,7 +11,17 @@ BuildLabels::CommandLine::COMMANDS[:changed] = Class.new do
 
     $stderr.puts "Changes Compose: #{dc_folder}, git root: #{git_root}, CI_COMMIT_BEFORE_SHA: #{ENV['CI_COMMIT_BEFORE_SHA']}, CI_COMMIT_SHA: #{ENV['CI_COMMIT_SHA']}"
 
+    if ENV['CI_COMMIT_BEFORE_SHA'] == '0000000000000000000000000000000000000000'
+      $stderr.puts 'Initial commit (CI_COMMIT_BEFORE_SHA: 0000000000000000000000000000000000000000), should build'
+      return
+    end
+
     changed_files = `git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA`.split("\n").map(&:strip).delete_if(&:empty?)
+    unless $?.success?
+      $stderr.puts "Error executing git diff --name-only $CI_COMMIT_BEFORE_SHA $CI_COMMIT_SHA"
+      exit 1
+    end
+
     $stderr.puts "Changed Files:"
     changed_files.each { |file| $stderr.puts "\t#{file}" }
 

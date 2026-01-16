@@ -7,6 +7,7 @@ Gem::Specification.new do |s|
   s.version     = BuildLabels::Builder::VERSION
   s.executables << 'build-labels'
   s.executables << 'helm-push'
+  s.executables << 'install-docker-static'
   s.summary     = 'Generate docker build image labels from CI variables'
   s.description = ''
   s.authors     = ['Artyom B']

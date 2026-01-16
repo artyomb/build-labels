@@ -1,4 +1,7 @@
-#!/usr/bin/env sh
+#!/usr/bin/env ruby
+shell = DATA.read
+exec "sh", "-e", "-u", "-x", "-c", shell
+__END__
 set -eux
 
 # Dockerfile:
@@ -9,6 +12,16 @@ set -eux
 #
 #RUN docker -v
 ## docker build  --network=host --progress=plain .
+
+# TODO:
+# RUN apk add --no-cache ca-certificates curl tar \
+  # && arch="$(uname -m)" \
+  # && case "$arch" in x86_64|amd64) a=x86_64;; aarch64|arm64) a=aarch64;; *) exit 1;; esac \
+  # && url="https://download.docker.com/linux/static/stable/$a/" \
+  # && v="$(curl -fsSL "$url" | sed -n 's/.*docker-\([0-9.][0-9.]*\)\.tgz.*/\1/p' | sort -V | tail -n1)" \
+  # && curl -fsSL "${url}docker-${v}.tgz" | tar -xz -C /tmp \
+  # && install -m 0755 /tmp/docker/docker /usr/local/bin/docker \
+  # && docker -v
 
 install_docker_static() {
     arch="$(uname -m)"

@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
-shell = DATA.read
-exec "sh", "-e", "-u", "-x", "-c", shell
+text = File.read(__FILE__)
+shell = text.split(/^__END__\s*$/ , 2)[1] or abort("missing __END__")
+exec "sh", "-eux", "-c", shell, "sh", *ARGV
+
 __END__
 set -eux
 

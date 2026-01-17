@@ -6,6 +6,74 @@ exec "sh", "-eux", "-c", shell, "sh", *ARGV
 __END__
 set -eux
 
+docker_major=""
+docker_version_prefix=""
+
+usage() {
+    cat <<'USAGE'
+Usage: install-docker-static [VERSION_PREFIX] [--docker-major N]
+
+Options:
+  VERSION_PREFIX                  Install latest Docker version matching prefix
+                                  (e.g., 28, 28.5, 28.5.2)
+  -m, --major, --docker-major N   Install latest Docker version within major N
+  -h, --help                      Show this help
+USAGE
+}
+
+parse_args() {
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            -m|--major|--docker-major)
+                if [ -z "${2:-}" ]; then
+                    echo "Missing value for $1" >&2
+                    usage
+                    exit 1
+                fi
+                docker_major="$2"
+                shift 2
+                ;;
+            -h|--help)
+                usage
+                exit 0
+                ;;
+            *)
+                if [ -z "$docker_version_prefix" ]; then
+                    docker_version_prefix="$1"
+                    shift
+                else
+                    echo "Unexpected argument: $1" >&2
+                    usage
+                    exit 1
+                fi
+                ;;
+        esac
+    done
+
+    if [ -n "$docker_version_prefix" ] && [ -n "$docker_major" ]; then
+        echo "Specify either VERSION_PREFIX or --docker-major, not both." >&2
+        exit 1
+    fi
+
+    if [ -n "$docker_major" ]; then
+        case "$docker_major" in
+            *[!0-9]*)
+                echo "Invalid major version: $docker_major" >&2
+                exit 1
+                ;;
+        esac
+    fi
+
+    if [ -n "$docker_version_prefix" ]; then
+        case "$docker_version_prefix" in
+            *[!0-9.]*|*.*.*.*)
+                echo "Invalid version prefix: $docker_version_prefix" >&2
+                exit 1
+                ;;
+        esac
+    fi
+}
+
 detect_arch() {
     arch="$(uname -m)"
     case "$arch" in
@@ -40,16 +108,19 @@ detect_arch() {
     esac
 }
 
-# Dockerfile:
-#FROM ruby:3.4.4-slim-bookworm AS base
-#FROM ruby:3.2.10-alpine AS base
-## RUN gem install build-labels:0.0.71
-#RUN install-docker-static
+# Dockerfile example:
+#  # FROM ruby:3.4.4-slim-bookworm AS base
+#  FROM ruby:3.2.10-alpine AS base
+#  # RUN gem install build-labels:0.0.71
+#  RUN install-docker-static
+#  # Or pin to latest Docker within a major (or prefix):
+#  # RUN install-docker-static 28
+#  # RUN install-docker-static 28.5
 #
-#RUN docker -v
-## docker build  --network=host --progress=plain .
+#  RUN docker -v
+#  # docker build  --network=host --progress=plain .
 
-# TODO:
+# TODO: look for simpler script
 # RUN apk add --no-cache ca-certificates curl tar \
   # && arch="$(uname -m)" \
   # && case "$arch" in x86_64|amd64) a=x86_64;; aarch64|arm64) a=aarch64;; *) exit 1;; esac \
@@ -62,14 +133,34 @@ detect_arch() {
 install_docker_static() {
     detect_arch
     base_url="https://download.docker.com/linux/static/stable/$docker_arch/"
-    latest_version="$(
+    versions="$(
         curl -fsSL "$base_url" \
             | sed -n 's/.*docker-\([0-9.][0-9.]*\)\.tgz.*/\1/p' \
-            | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n \
-            | tail -n 1
+            | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n
     )"
+    if [ -n "$docker_version_prefix" ]; then
+        latest_version="$(
+            printf '%s\n' "$versions" \
+                | awk -v p="$docker_version_prefix" 'index($0, p ".")==1 || $0==p' \
+                | tail -n 1
+        )"
+    elif [ -n "$docker_major" ]; then
+        latest_version="$(
+            printf '%s\n' "$versions" \
+                | awk -F. -v m="$docker_major" '$1==m' \
+                | tail -n 1
+        )"
+    else
+        latest_version="$(printf '%s\n' "$versions" | tail -n 1)"
+    fi
     if [ -z "$latest_version" ]; then
-        echo "Unable to determine latest Docker version from $base_url" >&2
+        if [ -n "$docker_version_prefix" ]; then
+            echo "Unable to determine latest Docker version matching $docker_version_prefix from $base_url" >&2
+        elif [ -n "$docker_major" ]; then
+            echo "Unable to determine latest Docker version for major $docker_major from $base_url" >&2
+        else
+            echo "Unable to determine latest Docker version from $base_url" >&2
+        fi
         exit 1
     fi
     tmp_dir="$(mktemp -d)"
@@ -100,6 +191,8 @@ install_buildx() {
         "https://github.com/docker/buildx/releases/download/${buildx_version}/buildx-${buildx_version}.linux-${buildx_arch}"
     chmod 0755 "$plugin_dir/docker-buildx"
 }
+
+parse_args "$@"
 
 if command -v apt-get >/dev/null 2>&1; then
     apt-get update

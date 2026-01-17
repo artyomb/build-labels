@@ -1,5 +1,5 @@
 module BuildLabels
   class Builder
-    VERSION = '0.0.75'
+    VERSION = '0.0.76'
   end
 end

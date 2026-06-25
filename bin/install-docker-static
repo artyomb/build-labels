@@ -9,6 +9,16 @@ set -eux
 docker_major=""
 docker_version_prefix=""
 
+curl_fetch() {
+    curl -fsSL \
+        --retry "${CURL_RETRIES:-3}" \
+        --retry-delay "${CURL_RETRY_DELAY:-2}" \
+        --retry-all-errors \
+        --connect-timeout "${CURL_CONNECT_TIMEOUT:-10}" \
+        --max-time "${CURL_MAX_TIME:-120}" \
+        "$@"
+}
+
 usage() {
     cat <<'USAGE'
 Usage: install-docker-static [VERSION_PREFIX] [--docker-major N]
@@ -140,7 +150,7 @@ install_docker_static() {
     detect_arch
     base_url="https://download.docker.com/linux/static/stable/$docker_arch/"
     versions="$(
-        curl -fsSL "$base_url" \
+        curl_fetch "$base_url" \
             | sed -n 's/.*docker-\([0-9.][0-9.]*\)\.tgz.*/\1/p' \
             | sort -t. -k1,1n -k2,2n -k3,3n -k4,4n
     )"
@@ -170,7 +180,7 @@ install_docker_static() {
         exit 1
     fi
     tmp_dir="$(mktemp -d)"
-    curl -fsSL "${base_url}docker-${latest_version}.tgz" -o "$tmp_dir/docker.tgz"
+    curl_fetch "${base_url}docker-${latest_version}.tgz" -o "$tmp_dir/docker.tgz"
     tar -xzf "$tmp_dir/docker.tgz" -C "$tmp_dir"
     install -m 0755 "$tmp_dir/docker/docker" /usr/local/bin/docker
     rm -rf "$tmp_dir"
@@ -181,7 +191,7 @@ install_buildx() {
     buildx_version="${BUILDX_VERSION:-}"
     if [ -z "$buildx_version" ]; then
         buildx_version="$(
-            curl -fsSL https://api.github.com/repos/docker/buildx/releases/latest \
+            curl_fetch https://api.github.com/repos/docker/buildx/releases/latest \
                 | sed -n 's/.*"tag_name": "\(v[0-9.]*\)".*/\1/p' \
                 | head -n 1
         )"
@@ -192,7 +202,7 @@ install_buildx() {
     fi
     plugin_dir="/usr/local/lib/docker/cli-plugins"
     mkdir -p "$plugin_dir"
-    curl -fsSL \
+    curl_fetch \
         -o "$plugin_dir/docker-buildx" \
         "https://github.com/docker/buildx/releases/download/${buildx_version}/buildx-${buildx_version}.linux-${buildx_arch}"
     chmod 0755 "$plugin_dir/docker-buildx"
@@ -203,7 +213,7 @@ install_compose() {
     compose_version="${COMPOSE_VERSION:-}"
     if [ -z "$compose_version" ]; then
         compose_version="$(
-            curl -fsSL https://api.github.com/repos/docker/compose/releases/latest \
+            curl_fetch https://api.github.com/repos/docker/compose/releases/latest \
                 | sed -n 's/.*"tag_name": "\(v[0-9.]*\)".*/\1/p' \
                 | head -n 1
         )"
@@ -214,7 +224,7 @@ install_compose() {
     fi
     plugin_dir="/usr/local/lib/docker/cli-plugins"
     mkdir -p "$plugin_dir"
-    curl -fsSL \
+    curl_fetch \
         -o "$plugin_dir/docker-compose" \
         "https://github.com/docker/compose/releases/download/${compose_version}/docker-compose-linux-${compose_arch}"
     chmod 0755 "$plugin_dir/docker-compose"

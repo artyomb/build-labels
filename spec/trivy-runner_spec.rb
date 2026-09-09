@@ -75,10 +75,10 @@ RSpec.describe TrivyRunner do
     expect(status.exitstatus).to eq(0), errors
     expect(output).to include(image_id)
     expect(calls.first).to eq(['docker', 'buildx', 'bake', '-f', @file, '--print', '--'])
-    expect(scans).to eq([['docker', 'run', '--rm',
+    expect(scans).to eq([['docker', 'run', '--rm', '--pull', 'always',
                          '--mount', 'type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly',
                          '--mount', 'type=volume,src=trivy-cache,dst=/root/.cache/trivy',
-                         'aquasec/trivy:0.74.0', 'image', '--cache-dir', '/root/.cache/trivy',
+                         'aquasec/trivy', 'image', '--cache-dir', '/root/.cache/trivy',
                          '--image-src', 'docker', '--scanners', 'vuln',
                          '--severity', 'HIGH,CRITICAL', '--exit-code', '1', image_id]])
     expect(calls.count { _1.take(3) == ['docker', 'image', 'inspect'] }).to eq(2)
@@ -89,7 +89,7 @@ RSpec.describe TrivyRunner do
     scanner_image = "registry.example/trivy@sha256:#{'c' * 64}"
     expect(invoke(env: {'TRIVY_IMAGE' => scanner_image}).last.exitstatus).to eq(0)
     expect(scans.first).to include(scanner_image)
-    expect(scans.first).not_to include('TRIVY_IMAGE', 'aquasec/trivy:0.74.0')
+    expect(scans.first).not_to include('TRIVY_IMAGE', 'aquasec/trivy')
   end
 
   it 'forwards Trivy environment variable names without exposing values in arguments' do

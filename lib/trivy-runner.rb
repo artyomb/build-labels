@@ -51,10 +51,10 @@ class TrivyRunner
   def scan(image_id, severity)
     environment = ENV.keys.grep(/\ATRIVY_/) - %w[TRIVY_IMAGE]
     cache_dir = ENV.fetch('TRIVY_CACHE_DIR', '/root/.cache/trivy')
-    system('docker', 'run', '--rm',
+    system('docker', 'run', '--rm', '--pull', 'always',
            '--mount', 'type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly',
            '--mount', "type=volume,src=trivy-cache,dst=#{cache_dir}",
-           *environment.flat_map { ['--env', _1] }, ENV.fetch('TRIVY_IMAGE', 'aquasec/trivy'), # :0.74.0
+           *environment.flat_map { ['--env', _1] }, ENV.fetch('TRIVY_IMAGE', 'aquasec/trivy'),
            'image', '--cache-dir', cache_dir, '--image-src', 'docker', '--scanners', 'vuln',
            '--severity', severity.join(','), '--exit-code', '1', image_id)
   end

@@ -61,7 +61,7 @@ The runner resolves tags with `docker buildx bake --print`, checks every selecte
 
 `--fail-on` accepts comma-separated `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`, ignoring case; the default is `HIGH,CRITICAL`. Scanning covers vulnerabilities, including unfixed findings under Trivy's default configuration.
 
-Each scan uses `docker run --rm` with `aquasec/trivy:0.74.0`; set `TRIVY_IMAGE` to override the scanner image, including a digest-pinned reference. The container mounts `/var/run/docker.sock` from the Docker daemon host and uses the persistent named volume `trivy-cache` at `TRIVY_CACHE_DIR` (default `/root/.cache/trivy`). This requires the daemon's standard Unix socket; remote/rootless socket layouts are not automatically mapped. Use a trusted scanner image because socket access grants access to the Docker daemon.
+Each scan uses `docker run --rm --pull always` with the unpinned `aquasec/trivy` image, pulling the current `latest` image before starting. Set `TRIVY_IMAGE` to override the scanner image, including a digest-pinned reference. A pull failure stops the command. The container mounts `/var/run/docker.sock` from the Docker daemon host and uses the persistent named volume `trivy-cache` at `TRIVY_CACHE_DIR` (default `/root/.cache/trivy`). This requires the daemon's standard Unix socket; remote/rootless socket layouts are not automatically mapped. Use a trusted scanner image because socket access grants access to the Docker daemon.
 
 Other `TRIVY_*` variables are forwarded to the container. Local configuration/ignore files and other environment variables are not automatically shared; file paths must exist inside the scanner image or its cache volume. An outer build container's cache bind mount is not used by the scanner's named volume.
 

@@ -37,8 +37,7 @@ class TrivyRunner
 
     verify_images(images)
     images.values.uniq.each do |image_id|
-      return 1 unless system('trivy', 'image', '--image-src', 'docker', '--scanners', 'vuln',
-                             '--severity', severity.join(','), '--exit-code', '1', image_id)
+      return 1 unless scan(image_id, severity)
     end
     verify_images(images)
     0
@@ -48,6 +47,17 @@ class TrivyRunner
   end
 
   private
+
+  def scan(image_id, severity)
+    environment = ENV.keys.grep(/\ATRIVY_/) - %w[TRIVY_IMAGE]
+    cache_dir = ENV.fetch('TRIVY_CACHE_DIR', '/root/.cache/trivy')
+    system('docker', 'run', '--rm',
+           '--mount', 'type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly',
+           '--mount', "type=volume,src=trivy-cache,dst=#{cache_dir}",
+           *environment.flat_map { ['--env', _1] }, ENV.fetch('TRIVY_IMAGE', 'aquasec/trivy'), # :0.74.0
+           'image', '--cache-dir', cache_dir, '--image-src', 'docker', '--scanners', 'vuln',
+           '--severity', severity.join(','), '--exit-code', '1', image_id)
+  end
 
   def empty_compose?(file)
     document = YAML.safe_load(File.read(file), aliases: true)

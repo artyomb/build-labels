@@ -20,11 +20,9 @@ RSpec.describe TrivyRunner do
       @metadata = File.join(directory, 'metadata.json')
       @log = File.join(directory, 'commands.jsonl')
       File.write(@file, "services:\n  app:\n    image: app\n    build: .\n")
-      %w[docker trivy].each do |name|
-        path = File.join(directory, name)
-        File.write(path, "#!#{RbConfig.ruby}\n" + fake_tool)
-        File.chmod(0o755, path)
-      end
+      path = File.join(directory, 'docker')
+      File.write(path, "#!#{RbConfig.ruby}\n" + fake_tool)
+      File.chmod(0o755, path)
       example.run
     end
   end
@@ -35,11 +33,10 @@ RSpec.describe TrivyRunner do
       fixture = JSON.parse(File.read(ENV.fetch('SCAN_FIXTURE')))
       tool = File.basename($0)
       File.open(ENV.fetch('SCAN_LOG'), 'a') { _1.puts JSON.generate([tool, *ARGV]) }
-      if tool == 'trivy'
+      case ARGV.take(2)
+      when ['run', '--rm']
         puts "Scanning #{ARGV.last}"
         exit fixture.fetch('scan_status', 0)
-      end
-      case ARGV.take(2)
       when ['buildx', 'bake']
         abort 'Unexpected build operation' unless ARGV.include?('--print')
         abort 'Bake failed' if fixture['bake_failure']
@@ -56,13 +53,13 @@ RSpec.describe TrivyRunner do
     RUBY
   end
 
-  def invoke(*args, include_metadata: true)
+  def invoke(*args, include_metadata: true, env: {})
     fixture_path = File.join(@directory, 'fixture.json')
     File.write(fixture_path, JSON.generate(fixture))
     File.write(@metadata, metadata_json)
     options = ['-f', @file]
     options += ['--metadata-file', @metadata] if include_metadata
-    environment = {'PATH' => @directory, 'SCAN_FIXTURE' => fixture_path, 'SCAN_LOG' => @log}
+    environment = {'PATH' => @directory, 'SCAN_FIXTURE' => fixture_path, 'SCAN_LOG' => @log}.merge(env)
     Open3.capture3(environment, RbConfig.ruby, File.expand_path('../bin/trivy-runner', __dir__),
                    *options, *args, unsetenv_others: true)
   end
@@ -71,17 +68,41 @@ RSpec.describe TrivyRunner do
     File.exist?(@log) ? File.readlines(@log).map { JSON.parse(_1) } : []
   end
 
-  def scans = calls.select { _1.first == 'trivy' }
+  def scans = calls.select { _1.take(2) == ['docker', 'run'] }
 
   it 'scans the built image once for multiple tags and verifies tags before and after' do
     output, errors, status = invoke('--image-src', 'docker')
     expect(status.exitstatus).to eq(0), errors
     expect(output).to include(image_id)
     expect(calls.first).to eq(['docker', 'buildx', 'bake', '-f', @file, '--print', '--'])
-    expect(scans).to eq([['trivy', 'image', '--image-src', 'docker', '--scanners', 'vuln',
+    expect(scans).to eq([['docker', 'run', '--rm',
+                         '--mount', 'type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly',
+                         '--mount', 'type=volume,src=trivy-cache,dst=/root/.cache/trivy',
+                         'aquasec/trivy:0.74.0', 'image', '--cache-dir', '/root/.cache/trivy',
+                         '--image-src', 'docker', '--scanners', 'vuln',
                          '--severity', 'HIGH,CRITICAL', '--exit-code', '1', image_id]])
     expect(calls.count { _1.take(3) == ['docker', 'image', 'inspect'] }).to eq(2)
     expect(calls.last).to eq(['docker', 'image', 'inspect', '--', *tags])
+  end
+
+  it 'allows overriding the scanner image without forwarding the wrapper setting' do
+    scanner_image = "registry.example/trivy@sha256:#{'c' * 64}"
+    expect(invoke(env: {'TRIVY_IMAGE' => scanner_image}).last.exitstatus).to eq(0)
+    expect(scans.first).to include(scanner_image)
+    expect(scans.first).not_to include('TRIVY_IMAGE', 'aquasec/trivy:0.74.0')
+  end
+
+  it 'forwards Trivy environment variable names without exposing values in arguments' do
+    env = {'TRIVY_IGNORE_UNFIXED' => 'true', 'TRIVY_TOKEN' => 'test-token', 'UNRELATED' => 'value'}
+    expect(invoke(env: env).last.exitstatus).to eq(0)
+    expect(scans.first.each_cons(2).to_a).to include(['--env', 'TRIVY_IGNORE_UNFIXED'], ['--env', 'TRIVY_TOKEN'])
+    expect(scans.first).not_to include('test-token', 'UNRELATED')
+  end
+
+  it 'mounts the persistent cache at the configured container path' do
+    expect(invoke(env: {'TRIVY_CACHE_DIR' => '/scan cache'}).last.exitstatus).to eq(0)
+    expect(scans.first).to include('type=volume,src=trivy-cache,dst=/scan cache')
+    expect(scans.first.each_cons(2).to_a).to include(['--cache-dir', '/scan cache'])
   end
 
   it 'deduplicates images shared by different targets' do
@@ -220,7 +241,7 @@ RSpec.describe TrivyRunner do
     fixture['scan_status'] = 1
     expect(invoke.last.exitstatus).to eq(1)
     expect(scans.map(&:last)).to eq([image_id])
-    expect(calls.last.first).to eq('trivy')
+    expect(calls.last).to eq(scans.last)
   end
 
   it 'fails on scanner operational errors' do
@@ -228,9 +249,18 @@ RSpec.describe TrivyRunner do
     expect(invoke.last.exitstatus).to eq(1)
   end
 
-  it 'fails when Trivy is unavailable' do
-    File.rename(File.join(@directory, 'trivy'), File.join(@directory, 'trivy.disabled'))
+  [125, 126, 127].each do |exit_code|
+    it "fails when the scanner container cannot run (status #{exit_code})" do
+      fixture['scan_status'] = exit_code
+      expect(invoke.last.exitstatus).to eq(1)
+      expect(calls.last).to eq(scans.last)
+    end
+  end
+
+  it 'fails when Docker is unavailable' do
+    File.rename(File.join(@directory, 'docker'), File.join(@directory, 'docker.disabled'))
     expect(invoke.last.exitstatus).to eq(1)
+    expect(calls).to be_empty
   end
 
   it 'fails when resolving the Bake plan fails' do

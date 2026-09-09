@@ -32,7 +32,7 @@ To install the gem
 
 ## Image vulnerability checks
 
-`trivy-runner` scans locally built images using Docker/Buildx and Trivy installed on PATH. It requires the metadata file produced by the build:
+`trivy-runner` scans locally built images using Docker/Buildx and a Trivy container; no local Trivy installation is needed. It requires the metadata file produced by the build:
 
 ```sh
 docker buildx bake -f bake.yml --set '*.output=type=docker' --sbom=false --provenance=false --metadata-file /tmp/bake-metadata.json
@@ -43,7 +43,11 @@ Run from the same directory and with the same environment as the build. Append B
 
 The runner resolves tags with `docker buildx bake --print`, checks every selected tag against its build image ID, and scans each distinct image ID once. It checks the tags again after successful scans. Empty Compose service lists are skipped. Exit status is 0 on success and 1 on an invalid input, image mismatch, vulnerability-policy failure, or tool failure. Trivy's scan output is streamed to the terminal.
 
-`--fail-on` accepts comma-separated `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`, ignoring case; the default is `HIGH,CRITICAL`. Scanning covers vulnerabilities, including unfixed findings under Trivy's default configuration. Trivy's environment/configuration controls its cache, database access, and ignore rules.
+`--fail-on` accepts comma-separated `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`, ignoring case; the default is `HIGH,CRITICAL`. Scanning covers vulnerabilities, including unfixed findings under Trivy's default configuration.
+
+Each scan uses `docker run --rm` with `aquasec/trivy:0.74.0`; set `TRIVY_IMAGE` to override the scanner image, including a digest-pinned reference. The container mounts `/var/run/docker.sock` from the Docker daemon host and uses the persistent named volume `trivy-cache` at `TRIVY_CACHE_DIR` (default `/root/.cache/trivy`). This requires the daemon's standard Unix socket; remote/rootless socket layouts are not automatically mapped. Use a trusted scanner image because socket access grants access to the Docker daemon.
+
+Other `TRIVY_*` variables are forwarded to the container. Local configuration/ignore files and other environment variables are not automatically shared; file paths must exist inside the scanner image or its cache volume. An outer build container's cache bind mount is not used by the scanner's named volume.
 
 Building, testing, publishing, and SBOM generation/signing are separate operations. Run this command before publication, and keep local image tags stable through the scan/push interval; the runner does not lock the shared Docker daemon.
 

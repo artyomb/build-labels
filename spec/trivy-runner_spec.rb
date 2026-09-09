@@ -136,7 +136,9 @@ RSpec.describe TrivyRunner do
   end
 
   it 'uses the native severity option without injecting another severity filter' do
-    expect(invoke('--', '--severity', 'CRITICAL').last.exitstatus).to eq(0)
+    _, errors, status = invoke('--', '--severity', 'CRITICAL')
+    expect(status.exitstatus).to eq(0)
+    expect(errors).to end_with("\e[32mTrivy checks passed. Options: --severity CRITICAL\e[0m\n")
     expect(scans.first.last(3)).to eq(['--severity', 'CRITICAL', image_id])
     expect(scans.first.count('--severity')).to eq(1)
     expect(scans.first).not_to include('HIGH,CRITICAL')
@@ -152,9 +154,11 @@ RSpec.describe TrivyRunner do
   it 'forwards native Trivy options and values after the separator without changing Bake targets' do
     trivy_args = ['--severity', 'HIGH,CRITICAL', '--ignore-unfixed', '--no-progress', '--timeout', '10m', '-f', 'json']
     fixture['scan_output'] = '[]'
-    output, _, status = invoke('--no-tty', 'app', 'release', '--', *trivy_args)
+    output, errors, status = invoke('--no-tty', 'app', 'release', '--', *trivy_args)
     expect(status.exitstatus).to eq(0)
     expect(output).to eq("[]\n")
+    expect(errors).to end_with("\e[32mTrivy checks passed. Options: --severity HIGH,CRITICAL --ignore-unfixed " \
+                              "--no-progress --timeout 10m -f json\e[0m\n")
     expect(scans.first).not_to include('--tty', '--no-tty')
     expect(calls.first.last(3)).to eq(['--', 'app', 'release'])
     expect(scans.first.last(trivy_args.size + 1)).to eq([*trivy_args, image_id])

@@ -1,6 +1,7 @@
 require 'json'
 require 'open3'
 require 'optparse'
+require 'shellwords'
 require 'yaml'
 require_relative 'version'
 
@@ -38,7 +39,7 @@ class TrivyRunner
       return 1 unless scan(image_id, trivy_args, tty)
     end
     verify_images(images)
-    warn "\e[32mTrivy checks passed.\e[0m"
+    warn "\e[32mTrivy checks passed.#{trivy_args.empty? ? '' : " Options: #{trivy_args.shelljoin}"}\e[0m"
     0
   rescue StandardError => error
     warn error.message

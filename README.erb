@@ -55,6 +55,14 @@ trivy-runner -f bake.yml --metadata-file /tmp/bake-metadata.json -- --severity H
 
 Each scan uses `docker run --rm --pull always` with the unpinned `aquasec/trivy` image, pulling the current `latest` image before starting. Set `TRIVY_IMAGE` to override the scanner image, including a digest-pinned reference. A pull failure stops the command. The container mounts `/var/run/docker.sock` from the Docker daemon host and uses the persistent named volume `trivy-cache` at `TRIVY_CACHE_DIR` (default `/root/.cache/trivy`). This requires the daemon's standard Unix socket; remote/rootless socket layouts are not automatically mapped. Use a trusted scanner image because socket access grants access to the Docker daemon.
 
+Starting with `0.0.83`, terminal output is enabled by default for colored Trivy tables in CI:
+
+```sh
+trivy-runner -f bake.yml --metadata-file /tmp/bake-metadata.json -- --severity HIGH,CRITICAL --ignore-unfixed --table-mode detailed
+```
+
+This allocates a terminal for the scanner container without interactive input. Add `--no-tty` before `--` when capturing JSON or other machine-readable reports: a container terminal combines Trivy's stdout and stderr. Explicit `--tty` is also supported. Before each distinct image scan, a cyan banner lists its tags and image ID. After all scans and the final tag verification succeed, the runner prints a green `Trivy checks passed.` message. Both messages go to stderr, including in CI logs. Failed checks do not print the success message; empty selections print neither. Success means the configured scan policy passed; filtered findings may still exist.
+
 Other `TRIVY_*` variables are forwarded to the container. Local configuration/ignore files and other environment variables are not automatically shared; file paths must exist inside the scanner image or its cache volume. An outer build container's cache bind mount is not used by the scanner's named volume.
 
 Building, testing, publishing, and SBOM generation/signing are separate operations. Run this command before publication, and keep local image tags stable through the scan/push interval; the runner does not lock the shared Docker daemon.

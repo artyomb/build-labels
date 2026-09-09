@@ -10,12 +10,14 @@ class TrivyRunner
   def run(args)
     file = 'bake.yml'
     metadata_file = nil
+    tty = true
     parser = OptionParser.new do |options|
       options.banner = 'Usage: trivy-runner -f BAKE_FILE --metadata-file FILE [TARGET/GROUP ...] [-- TRIVY_OPTIONS ...]'
       options.separator 'Options after -- are forwarded to trivy image.'
       options.on('-f', '--file FILE', 'Bake or Compose file (default: bake.yml)') { file = _1 }
       options.on('--metadata-file FILE', 'Buildx metadata from the local build') { metadata_file = _1 }
       options.on('--image-src SOURCE', %w[docker], 'Image source (default: docker)')
+      options.on('--[no-]tty', 'Enable terminal output and Trivy table colors (default: enabled)') { tty = _1 }
       options.on('-v', '--version', 'Print version') { puts BuildLabels::Builder::VERSION; return 0 }
       options.on('-h', '--help', 'Print help') { puts options; return 0 }
     end
@@ -31,10 +33,12 @@ class TrivyRunner
     return 0 if images.empty?
 
     verify_images(images)
-    images.values.uniq.each do |image_id|
-      return 1 unless scan(image_id, trivy_args)
+    images.group_by { |_, image_id| image_id }.each do |image_id, entries|
+      warn "\n\e[36m=== Trivy scan: #{entries.map(&:first).join(', ')} ===\nImage ID: #{image_id}\e[0m"
+      return 1 unless scan(image_id, trivy_args, tty)
     end
     verify_images(images)
+    warn "\e[32mTrivy checks passed.\e[0m"
     0
   rescue StandardError => error
     warn error.message
@@ -43,10 +47,10 @@ class TrivyRunner
 
   private
 
-  def scan(image_id, trivy_args)
+  def scan(image_id, trivy_args, tty)
     environment = ENV.keys.grep(/\ATRIVY_/) - %w[TRIVY_IMAGE]
     cache_dir = ENV.fetch('TRIVY_CACHE_DIR', '/root/.cache/trivy')
-    system('docker', 'run', '--rm', '--pull', 'always',
+    system('docker', 'run', '--rm', '--pull', 'always', *(tty ? ['--tty'] : []),
            '--mount', 'type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly',
            '--mount', "type=volume,src=trivy-cache,dst=#{cache_dir}",
            *environment.flat_map { ['--env', _1] }, ENV.fetch('TRIVY_IMAGE', 'aquasec/trivy'),

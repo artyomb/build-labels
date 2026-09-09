@@ -35,7 +35,7 @@ RSpec.describe TrivyRunner do
       File.open(ENV.fetch('SCAN_LOG'), 'a') { _1.puts JSON.generate([tool, *ARGV]) }
       case ARGV.take(2)
       when ['run', '--rm']
-        puts "Scanning #{ARGV.last}"
+        puts fixture.fetch('scan_output', "Scanning #{ARGV.last}")
         exit fixture.fetch('scan_status', 0)
       when ['buildx', 'bake']
         abort 'Unexpected build operation' unless ARGV.include?('--print')
@@ -74,8 +74,11 @@ RSpec.describe TrivyRunner do
     output, errors, status = invoke('--image-src', 'docker')
     expect(status.exitstatus).to eq(0), errors
     expect(output).to include(image_id)
+    expect(output).not_to include('Trivy checks passed.', '=== Trivy scan:')
+    expect(errors).to eq("\n\e[36m=== Trivy scan: #{tags.join(', ')} ===\nImage ID: #{image_id}\e[0m\n" \
+                        "\e[32mTrivy checks passed.\e[0m\n")
     expect(calls.first).to eq(['docker', 'buildx', 'bake', '-f', @file, '--print', '--'])
-    expect(scans).to eq([['docker', 'run', '--rm', '--pull', 'always',
+    expect(scans).to eq([['docker', 'run', '--rm', '--pull', 'always', '--tty',
                          '--mount', 'type=bind,src=/var/run/docker.sock,dst=/var/run/docker.sock,readonly',
                          '--mount', 'type=volume,src=trivy-cache,dst=/root/.cache/trivy',
                          'aquasec/trivy', 'image', '--cache-dir', '/root/.cache/trivy',
@@ -113,12 +116,23 @@ RSpec.describe TrivyRunner do
     expect(scans.length).to eq(1)
   end
 
-  it 'scans all distinct images' do
+  it 'scans all distinct images with explicit terminal output and reports success once' do
     plan['target']['other'] = {'tags' => ['other:1.0']}
     metadata['other'] = {'containerimage.config.digest' => other_id}
     fixture['images']['other:1.0'] = other_id
-    expect(invoke.last.exitstatus).to eq(0)
+    _, errors, status = invoke('--tty')
+    expect(status.exitstatus).to eq(0), errors
     expect(scans.map(&:last)).to eq([image_id, other_id])
+    expect(errors.scan('=== Trivy scan:').size).to eq(2)
+    expect(errors.index("Image ID: #{image_id}")).to be < errors.index("Image ID: #{other_id}")
+    expect(errors).to include('=== Trivy scan: other:1.0 ===')
+    expect(errors.scan('Trivy checks passed.').size).to eq(1)
+    expect(errors).to end_with("\e[32mTrivy checks passed.\e[0m\n")
+    scans.each do |scan|
+      expect(scan.take_while { _1 != 'aquasec/trivy' }).to include('--tty')
+      expect(scan).not_to include('-i', '--interactive')
+    end
+    expect(calls.first).not_to include('--tty')
   end
 
   it 'uses the native severity option without injecting another severity filter' do
@@ -137,7 +151,11 @@ RSpec.describe TrivyRunner do
 
   it 'forwards native Trivy options and values after the separator without changing Bake targets' do
     trivy_args = ['--severity', 'HIGH,CRITICAL', '--ignore-unfixed', '--no-progress', '--timeout', '10m', '-f', 'json']
-    expect(invoke('app', 'release', '--', *trivy_args).last.exitstatus).to eq(0)
+    fixture['scan_output'] = '[]'
+    output, _, status = invoke('--no-tty', 'app', 'release', '--', *trivy_args)
+    expect(status.exitstatus).to eq(0)
+    expect(output).to eq("[]\n")
+    expect(scans.first).not_to include('--tty', '--no-tty')
     expect(calls.first.last(3)).to eq(['--', 'app', 'release'])
     expect(scans.first.last(trivy_args.size + 1)).to eq([*trivy_args, image_id])
   end
@@ -149,12 +167,14 @@ RSpec.describe TrivyRunner do
     expect(File.exist?(File.join(@directory, 'unwanted'))).to be(false)
   end
 
-  it 'forwards Trivy options to every distinct image' do
+  it 'disables terminal output and forwards Trivy options to every distinct image' do
     plan['target']['other'] = {'tags' => ['other:1.0']}
     metadata['other'] = {'containerimage.config.digest' => other_id}
     fixture['images']['other:1.0'] = other_id
-    expect(invoke('--', '--ignore-unfixed').last.exitstatus).to eq(0)
+    expect(invoke('--no-tty', '--', '--ignore-unfixed').last.exitstatus).to eq(0)
     expect(scans.map { _1.last(2) }).to eq([['--ignore-unfixed', image_id], ['--ignore-unfixed', other_id]])
+    scans.each { expect(_1).not_to include('--tty', '--no-tty') }
+    expect(calls.first).not_to include('--no-tty')
   end
 
   it 'rejects native Trivy options before the separator' do
@@ -192,7 +212,7 @@ RSpec.describe TrivyRunner do
   it 'prints help without requiring metadata or external tools' do
     output, _, status = invoke('--help', include_metadata: false)
     expect(status.exitstatus).to eq(0)
-    expect(output).to include('Usage: trivy-runner')
+    expect(output).to include('Usage: trivy-runner', '--[no-]tty', 'default: enabled')
     expect(calls).to be_empty
   end
 
@@ -205,13 +225,17 @@ RSpec.describe TrivyRunner do
 
   it 'skips an empty Compose service list' do
     File.write(@file, "services: {}\n")
-    expect(invoke.last.exitstatus).to eq(0)
+    _, errors, status = invoke
+    expect(status.exitstatus).to eq(0)
+    expect(errors).to be_empty
     expect(calls).to be_empty
   end
 
   it 'skips an empty resolved Bake target map' do
     plan['target'] = {}
-    expect(invoke.last.exitstatus).to eq(0)
+    _, errors, status = invoke
+    expect(status.exitstatus).to eq(0)
+    expect(errors).to be_empty
     expect(scans).to be_empty
   end
 
@@ -260,7 +284,9 @@ RSpec.describe TrivyRunner do
 
   it 'fails if tags change during scanning' do
     fixture['images_after'] = fixture['images'].merge(tags.last => other_id)
-    expect(invoke.last.exitstatus).to eq(1)
+    _, errors, status = invoke
+    expect(status.exitstatus).to eq(1)
+    expect(errors).not_to include('Trivy checks passed.')
     expect(scans.length).to eq(1)
   end
 
@@ -269,14 +295,20 @@ RSpec.describe TrivyRunner do
     metadata['other'] = {'containerimage.config.digest' => other_id}
     fixture['images']['other:1.0'] = other_id
     fixture['scan_status'] = 1
-    expect(invoke('--', '--ignore-unfixed').last.exitstatus).to eq(1)
+    _, errors, status = invoke('--tty', '--', '--ignore-unfixed')
+    expect(status.exitstatus).to eq(1)
+    expect(errors).not_to include('Trivy checks passed.')
+    expect(errors.scan('=== Trivy scan:').size).to eq(1)
+    expect(errors).not_to include("Image ID: #{other_id}")
     expect(scans.map(&:last)).to eq([image_id])
     expect(calls.last).to eq(scans.last)
   end
 
   it 'fails on scanner operational errors' do
     fixture['scan_status'] = 2
-    expect(invoke.last.exitstatus).to eq(1)
+    _, errors, status = invoke
+    expect(status.exitstatus).to eq(1)
+    expect(errors).not_to include('Trivy checks passed.')
   end
 
   [125, 126, 127].each do |exit_code|

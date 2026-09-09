@@ -5,28 +5,23 @@ require 'yaml'
 require_relative 'version'
 
 class TrivyRunner
-  SEVERITIES = %w[UNKNOWN LOW MEDIUM HIGH CRITICAL].freeze
   IMAGE_ID = /\Asha256:[0-9a-f]{64}\z/
 
   def run(args)
     file = 'bake.yml'
     metadata_file = nil
-    severity = %w[HIGH CRITICAL]
     parser = OptionParser.new do |options|
-      options.banner = 'Usage: trivy-runner -f BAKE_FILE --metadata-file FILE [TARGET/GROUP ...]'
+      options.banner = 'Usage: trivy-runner -f BAKE_FILE --metadata-file FILE [TARGET/GROUP ...] [-- TRIVY_OPTIONS ...]'
+      options.separator 'Options after -- are forwarded to trivy image.'
       options.on('-f', '--file FILE', 'Bake or Compose file (default: bake.yml)') { file = _1 }
       options.on('--metadata-file FILE', 'Buildx metadata from the local build') { metadata_file = _1 }
       options.on('--image-src SOURCE', %w[docker], 'Image source (default: docker)')
-      options.on('--fail-on SEVERITIES', Array, 'Fail on these severities (default: HIGH,CRITICAL)') do |values|
-        severity = values.map { _1.strip.upcase }.uniq
-        if severity.empty? || (severity - SEVERITIES).any?
-          raise OptionParser::InvalidArgument, values.join(',')
-        end
-      end
       options.on('-v', '--version', 'Print version') { puts BuildLabels::Builder::VERSION; return 0 }
       options.on('-h', '--help', 'Print help') { puts options; return 0 }
     end
-    targets = parser.parse!(args.dup)
+    separator = args.index('--') || args.length
+    trivy_args = args.drop(separator + 1)
+    targets = parser.parse!(args.take(separator))
     raise OptionParser::MissingArgument, '--metadata-file' unless metadata_file
     return 0 if targets.empty? && empty_compose?(file)
 
@@ -37,7 +32,7 @@ class TrivyRunner
 
     verify_images(images)
     images.values.uniq.each do |image_id|
-      return 1 unless scan(image_id, severity)
+      return 1 unless scan(image_id, trivy_args)
     end
     verify_images(images)
     0
@@ -48,7 +43,7 @@ class TrivyRunner
 
   private
 
-  def scan(image_id, severity)
+  def scan(image_id, trivy_args)
     environment = ENV.keys.grep(/\ATRIVY_/) - %w[TRIVY_IMAGE]
     cache_dir = ENV.fetch('TRIVY_CACHE_DIR', '/root/.cache/trivy')
     system('docker', 'run', '--rm', '--pull', 'always',
@@ -56,7 +51,7 @@ class TrivyRunner
            '--mount', "type=volume,src=trivy-cache,dst=#{cache_dir}",
            *environment.flat_map { ['--env', _1] }, ENV.fetch('TRIVY_IMAGE', 'aquasec/trivy'),
            'image', '--cache-dir', cache_dir, '--image-src', 'docker', '--scanners', 'vuln',
-           '--severity', severity.join(','), '--exit-code', '1', image_id)
+           '--exit-code', '1', *trivy_args, image_id)
   end
 
   def empty_compose?(file)

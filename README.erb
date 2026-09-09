@@ -36,14 +36,22 @@ To install the gem
 
 ```sh
 docker buildx bake -f bake.yml --set '*.output=type=docker' --sbom=false --provenance=false --metadata-file /tmp/bake-metadata.json
-trivy-runner -f bake.yml --metadata-file /tmp/bake-metadata.json --image-src docker --fail-on HIGH,CRITICAL
+trivy-runner -f bake.yml --metadata-file /tmp/bake-metadata.json --image-src docker -- --severity HIGH,CRITICAL
 ```
 
 Run from the same directory and with the same environment as the build. Append Bake target/group names when scanning a subset. The file defaults to `bake.yml`; `--metadata-file` is required. This version supports Docker-local images with one platform per target.
 
 The runner resolves tags with `docker buildx bake --print`, checks every selected tag against its build image ID, and scans each distinct image ID once. It checks the tags again after successful scans. Empty Compose service lists are skipped. Exit status is 0 on success and 1 on an invalid input, image mismatch, vulnerability-policy failure, or tool failure. Trivy's scan output is streamed to the terminal.
 
-`--fail-on` accepts comma-separated `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`, ignoring case; the default is `HIGH,CRITICAL`. Scanning covers vulnerabilities, including unfixed findings under Trivy's default configuration.
+Use Trivy's native `--severity HIGH,CRITICAL` after `--` to choose which severities are displayed and fail the scan. The runner supplies `--exit-code 1` and does not add a severity filter; without one, Trivy uses its environment/configuration or its default of all severities. Unfixed findings are included unless filtered out.
+
+Starting with `0.0.82`, put native `trivy image` options after `--`:
+
+```sh
+trivy-runner -f bake.yml --metadata-file /tmp/bake-metadata.json -- --severity HIGH,CRITICAL --ignore-unfixed --no-progress
+```
+
+`--ignore-unfixed` displays and fails on vulnerabilities only when a fixed version is available; `--no-progress` suppresses download progress bars. Put any Bake targets/groups before `--`. All following arguments are forwarded unchanged to every scan, after the runner's default Trivy options and before the image ID. Trivy handles option validation and repeated options; forwarded options can change scan behavior and failure policy. Paths refer to files inside the scanner container.
 
 Each scan uses `docker run --rm --pull always` with the unpinned `aquasec/trivy` image, pulling the current `latest` image before starting. Set `TRIVY_IMAGE` to override the scanner image, including a digest-pinned reference. A pull failure stops the command. The container mounts `/var/run/docker.sock` from the Docker daemon host and uses the persistent named volume `trivy-cache` at `TRIVY_CACHE_DIR` (default `/root/.cache/trivy`). This requires the daemon's standard Unix socket; remote/rootless socket layouts are not automatically mapped. Use a trusted scanner image because socket access grants access to the Docker daemon.
 

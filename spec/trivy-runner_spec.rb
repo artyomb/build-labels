@@ -80,7 +80,7 @@ RSpec.describe TrivyRunner do
                          '--mount', 'type=volume,src=trivy-cache,dst=/root/.cache/trivy',
                          'aquasec/trivy', 'image', '--cache-dir', '/root/.cache/trivy',
                          '--image-src', 'docker', '--scanners', 'vuln',
-                         '--severity', 'HIGH,CRITICAL', '--exit-code', '1', image_id]])
+                         '--exit-code', '1', image_id]])
     expect(calls.count { _1.take(3) == ['docker', 'image', 'inspect'] }).to eq(2)
     expect(calls.last).to eq(['docker', 'image', 'inspect', '--', *tags])
   end
@@ -121,16 +121,51 @@ RSpec.describe TrivyRunner do
     expect(scans.map(&:last)).to eq([image_id, other_id])
   end
 
-  it 'normalizes configured severities' do
-    expect(invoke('--fail-on=critical,high,critical').last.exitstatus).to eq(0)
-    expect(scans.first).to include('CRITICAL,HIGH')
+  it 'uses the native severity option without injecting another severity filter' do
+    expect(invoke('--', '--severity', 'CRITICAL').last.exitstatus).to eq(0)
+    expect(scans.first.last(3)).to eq(['--severity', 'CRITICAL', image_id])
+    expect(scans.first.count('--severity')).to eq(1)
+    expect(scans.first).not_to include('HIGH,CRITICAL')
   end
 
   it 'passes target and group arguments without shell interpretation' do
-    target = 'app; touch unwanted'
-    expect(invoke('--', target).last.exitstatus).to eq(0)
+    target = "app; touch #{File.join(@directory, 'unwanted')}"
+    expect(invoke(target).last.exitstatus).to eq(0)
     expect(calls.first.last(2)).to eq(['--', target])
     expect(File.exist?(File.join(@directory, 'unwanted'))).to be(false)
+  end
+
+  it 'forwards native Trivy options and values after the separator without changing Bake targets' do
+    trivy_args = ['--severity', 'HIGH,CRITICAL', '--ignore-unfixed', '--no-progress', '--timeout', '10m', '-f', 'json']
+    expect(invoke('app', 'release', '--', *trivy_args).last.exitstatus).to eq(0)
+    expect(calls.first.last(3)).to eq(['--', 'app', 'release'])
+    expect(scans.first.last(trivy_args.size + 1)).to eq([*trivy_args, image_id])
+  end
+
+  it 'passes Trivy argument values without shell interpretation' do
+    template = "{{ range . }}{{ .Target }}{{ end }}; touch #{File.join(@directory, 'unwanted')}"
+    expect(invoke('--', '--format=template', '--template', template).last.exitstatus).to eq(0)
+    expect(scans.first.last(4)).to eq(['--format=template', '--template', template, image_id])
+    expect(File.exist?(File.join(@directory, 'unwanted'))).to be(false)
+  end
+
+  it 'forwards Trivy options to every distinct image' do
+    plan['target']['other'] = {'tags' => ['other:1.0']}
+    metadata['other'] = {'containerimage.config.digest' => other_id}
+    fixture['images']['other:1.0'] = other_id
+    expect(invoke('--', '--ignore-unfixed').last.exitstatus).to eq(0)
+    expect(scans.map { _1.last(2) }).to eq([['--ignore-unfixed', image_id], ['--ignore-unfixed', other_id]])
+  end
+
+  it 'rejects native Trivy options before the separator' do
+    expect(invoke('--ignore-unfixed').last.exitstatus).to eq(1)
+    expect(calls).to be_empty
+  end
+
+  it 'accepts an empty list of forwarded options' do
+    expect(invoke('--').last.exitstatus).to eq(0)
+    expect(calls.first.last).to eq('--')
+    expect(scans.first.last(3)).to eq(['--exit-code', '1', image_id])
   end
 
   it 'ignores metadata belonging to unselected targets' do
@@ -139,13 +174,8 @@ RSpec.describe TrivyRunner do
     expect(scans.map(&:last)).to eq([image_id])
   end
 
-  it 'rejects unknown severity names before running tools' do
-    expect(invoke('--fail-on=critical,major').last.exitstatus).to eq(1)
-    expect(calls).to be_empty
-  end
-
-  it 'rejects an empty severity list' do
-    expect(invoke('--fail-on=').last.exitstatus).to eq(1)
+  it 'rejects the removed fail-on wrapper option' do
+    expect(invoke('--fail-on=HIGH,CRITICAL').last.exitstatus).to eq(1)
     expect(calls).to be_empty
   end
 
@@ -239,7 +269,7 @@ RSpec.describe TrivyRunner do
     metadata['other'] = {'containerimage.config.digest' => other_id}
     fixture['images']['other:1.0'] = other_id
     fixture['scan_status'] = 1
-    expect(invoke.last.exitstatus).to eq(1)
+    expect(invoke('--', '--ignore-unfixed').last.exitstatus).to eq(1)
     expect(scans.map(&:last)).to eq([image_id])
     expect(calls.last).to eq(scans.last)
   end

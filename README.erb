@@ -30,6 +30,23 @@ To install the gem
 
     $ gem install build-labels
 
+## Image vulnerability checks
+
+`trivy-runner` scans locally built images using Docker/Buildx and Trivy installed on PATH. It requires the metadata file produced by the build:
+
+```sh
+docker buildx bake -f bake.yml --set '*.output=type=docker' --sbom=false --provenance=false --metadata-file /tmp/bake-metadata.json
+trivy-runner -f bake.yml --metadata-file /tmp/bake-metadata.json --image-src docker --fail-on HIGH,CRITICAL
+```
+
+Run from the same directory and with the same environment as the build. Append Bake target/group names when scanning a subset. The file defaults to `bake.yml`; `--metadata-file` is required. This version supports Docker-local images with one platform per target.
+
+The runner resolves tags with `docker buildx bake --print`, checks every selected tag against its build image ID, and scans each distinct image ID once. It checks the tags again after successful scans. Empty Compose service lists are skipped. Exit status is 0 on success and 1 on an invalid input, image mismatch, vulnerability-policy failure, or tool failure. Trivy's scan output is streamed to the terminal.
+
+`--fail-on` accepts comma-separated `UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL`, ignoring case; the default is `HIGH,CRITICAL`. Scanning covers vulnerabilities, including unfixed findings under Trivy's default configuration. Trivy's environment/configuration controls its cache, database access, and ignore rules.
+
+Building, testing, publishing, and SBOM generation/signing are separate operations. Run this command before publication, and keep local image tags stable through the scan/push interval; the runner does not lock the shared Docker daemon.
+
 ## Usage
 Create the file `simple-compose.yml` which describes the images to build
 ```yaml
